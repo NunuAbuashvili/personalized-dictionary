@@ -1,0 +1,85 @@
+{% extends 'accounts/accounts-base.html' %}
+{% load static %}
+
+{% block title %}Profile Page{% endblock %}
+{% block body_class %}profile-page-body{% endblock %}
+
+{% block content %}
+<div class="navbar">
+    <nav class="navbar-content">
+        <ul class="navbar-links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">My Dictionaries</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+        {% if user.profile.image %}
+            <img src="{{ user.profile.image.url }}" alt="Profile image" class="user-pic" onclick="toggleMenu()">
+        {% else %}
+            <img src="{{ MEDIA_URL }}default.jpeg" alt="Default profile image" class="user-pic" onclick="toggleMenu()">
+        {% endif %}
+
+        <div class="sub-menu-wrap" id="subMenu">
+            <div class="sub-menu">
+                <div class="user-info">
+                    {% if user.profile.image %}
+                        <img src="{{ user.profile.image.url }}" alt="Profile">
+                    {% else %}
+                        <img src="{{ MEDIA_URL }}default.jpeg" alt="Default Profile">
+                    {% endif %}
+                    <h3>Username</h3>
+                </div>
+                <hr>
+
+                <a href="{% url 'accounts:update_profile' %}" class="sub-menu-link">
+                    <p>Edit Profile</p>
+                    <span>></span>
+                </a>
+                <a href="#" class="sub-menu-link">
+                    <p>My Dictionaries</p>
+                    <span>></span>
+                </a>
+                <a href="#" class="sub-menu-link">
+                    <p>My Quizzes</p>
+                    <span>></span>
+                </a>
+                <a href="{% url 'accounts:logout' %}" class="sub-menu-link">
+                    <p>Logout</p>
+                    <span>></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<div class="profile-container">
+    <div class="profile-content">
+        <div class="profile-info">
+            <img src="{{ user.profile.image.url }}" alt="Profile image" class="profile-pic">
+            <div class="profile-details">
+                <h4 class="profile-username">{{ user.username }}</h4>
+                <h4 class="profile-email">{{ user.email }}</h4>
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-sidebar">
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'accounts:view_profile' username=user.username %}">My Account</a></li>
+            <hr>
+            <li><a href="#">My Dictionaries</a></li>
+            <hr>
+            <li><a href="#">My Quizzes</a></li>
+            <hr>
+            <li><a href="{% url 'accounts:logout' %}">Logout</a></li>
+            <hr>
+        </ul>
+    </div>
+</div>
+{% endblock %}

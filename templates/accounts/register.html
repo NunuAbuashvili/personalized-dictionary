@@ -1,0 +1,58 @@
+{% extends 'accounts/accounts-base.html' %}
+{% load static %}
+
+{% block title %}Registration Form{% endblock %}
+{% block body_class %}accounts-body{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="forms">
+            <div class="form signup">
+                <span class="title">Registration</span>
+
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="POST" action="{% url 'accounts:register' %}">
+                    {% csrf_token %}
+
+                    <div class="input-field">
+                        {{ form.username }}
+                        <i class="uil uil-user"></i>
+                    </div>
+                    <div class="input-field">
+                        {{ form.email }}
+                        <i class="uil uil-envelope icon"></i>
+                    </div>
+                    <div class="input-field">
+                        {{ form.password1 }}
+                        <i class="uil uil-lock icon"></i>
+                    </div>
+                    <div class="input-field">
+                        {{ form.password2 }}
+                        <i class="uil uil-lock icon"></i>
+                        <i class="uil uil-eye-slash showHidePw"></i>
+                    </div>
+
+                    <div class="input-field button">
+                        <button type="submit">Signup</button>
+                    </div>
+                </form>
+
+                <div class="login-signup">
+                    <span class="text"
+                        >Already a member?
+                        <a href="{% url 'accounts:login' %}" class="text
+                        login-link">Login Now</a>
+                    </span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
