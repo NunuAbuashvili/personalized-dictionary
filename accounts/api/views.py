@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.exceptions import Throttled
 from rest_framework.generics import CreateAPIView, GenericAPIView
@@ -70,6 +71,7 @@ def get_user_from_token(token):
         )
 
 
+@extend_schema(tags=['Accounts'])
 class UserSignupAPIView(CreateAPIView):
     """
     API endpoint that allows users to register.
@@ -89,8 +91,10 @@ class UserSignupAPIView(CreateAPIView):
         )
 
 
+@extend_schema(tags=['Accounts'])
 class VerifyEmailAPIView(GenericAPIView):
     permission_classes = (~IsAuthenticated,)
+    serializer_class = None
 
     def get(self, request):
         token = request.query_params.get('token')
@@ -108,6 +112,7 @@ class VerifyEmailAPIView(GenericAPIView):
         return Response({"message": _("This email is already verified.")}, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=['Accounts'])
 class ResendVerificationEmailAPIView(APIView):
     permission_classes = (~IsAuthenticated,)
     serializer_class = EmailSerializer
@@ -139,6 +144,7 @@ class ResendVerificationEmailAPIView(APIView):
             )
 
 
+@extend_schema(tags=['Accounts'])
 class PasswordResetRequestAPIView(APIView):
     permission_classes = (~IsAuthenticated,)
     serializer_class = EmailSerializer
@@ -184,6 +190,7 @@ class PasswordResetRequestAPIView(APIView):
         )
 
 
+@extend_schema(tags=['Accounts'])
 class PasswordResetConfirmAPIView(APIView):
     permission_classes = (~IsAuthenticated,)
     serializer_class = PasswordResetConfirmSerializer
@@ -207,6 +214,7 @@ class PasswordResetConfirmAPIView(APIView):
         )
 
 
+@extend_schema(tags=['Accounts'])
 class UserProfileViewSet(ModelViewSet):
     queryset = UserProfile.objects.select_related('user')
     serializer_class = UserProfileSerializer

@@ -27,13 +27,12 @@ class UserSignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'password', 'password2', 'country')
+        fields = ('username', 'email', 'first_name', 'last_name', 'password', 'password2')
         extra_kwargs = {
             'username': {'label': _('Username')},
             'email': {'label': _('Email')},
             'first_name': {'label': _('First Name')},
             'last_name': {'label': _('Last Name')},
-            'country': {'label': _('Country of residence')},
         }
 
     def validate(self, data):
