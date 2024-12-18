@@ -1,0 +1,76 @@
+{% extends 'accounts/profile-base.html' %}
+{% load static %}
+
+{% block title %}My Folders{% endblock %}
+
+{% block profile_information %}
+<div class="profile-info">
+    <img src="{{ user.profile.image.url }}" alt="Profile image" class="profile-pic">
+    <div class="profile-details">
+        <h4 class="profile-username">{{ user.username }}</h4>
+        <h4 class="profile-email">{{ user.email }}</h4>
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block page_content %}
+<!-- Dictionary Folders Section -->
+<div class="dictionary-folders-container">
+    <div class="dictionary-folders-filter">
+        <button class="filter-btn active" onclick="filterFolders('All')">All</button>
+        {% for language in folder_languages %}
+        <button class="filter-btn" onclick="filterFolders('{{ language.name }}')">
+            {{ language.name }}</button>
+        {% endfor %}
+    </div>
+
+    <div class="dictionary-folders-grid">
+        {% for folder in folders %}
+        <a href="{% url 'dictionaries:folder-detail' user_slug=user.slug folder_slug=folder.slug %}"
+           class="dictionary-folder-link">
+            <div class="dictionary-folder" data-language="{{ folder.language }}">
+                <div class="dictionary-folder-icon">📖</div>
+                <div class="dictionary-folder-name">{{ folder.name }}</div>
+                <div class="dictionary-folder-language">{{ folder.language }}</div>
+            </div>
+        </a>
+        {% endfor %}
+
+        <a href="{% url 'dictionaries:folder-create' user_slug=user.slug %}"
+           class="dictionary-folder-link">
+            <div class="add-folder-btn">
+                <div class="add-folder-icon">+</div>
+                <div class="add-folder-text">Add New Folder</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Pagination Section -->
+    {% if is_paginated %}
+    <div class="pagination">
+        <div class="pagination-controls">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="pagination-first">&laquo; First</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="pagination-prev">Previous</a>
+            {% endif %}
+
+            <span class="pagination-info">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="pagination-next">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-last">Last &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

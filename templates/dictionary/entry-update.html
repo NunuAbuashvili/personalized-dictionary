@@ -1,0 +1,128 @@
+{% extends 'accounts/profile-base.html' %}
+{% load static %}
+
+{% block title %}Add New Dictionary Entry{% endblock %}
+
+{% block profile_information %}
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block page_content %}
+<div class="add-entry-container">
+    <h1 class="add-entry-title">Update Entry</h1>
+
+    <!-- Entry Form -->
+    <form method="post" action="">
+        {% csrf_token %}
+
+        <!-- Entry Word -->
+        <div class="form-group">
+            {{ form.word.label }}
+            {{ form.word }}
+        </div>
+
+        <!-- Meanings Section -->
+        <div class="meanings-section">
+            <h3>Meanings</h3>
+            <div id="meanings-container">
+                {% for meaning in meanings %}
+                    <div class="meaning-row">
+                        <input type="text" name="meaning_description[]" class="meaning-input"
+                               value="{{ meaning.description }}" placeholder="Enter meaning">
+                        <select name="meaning_language[]" class="language-select">
+                            {% for language in languages %}
+                                <option value="{{ language.name }}"
+                                    {% if meaning.target_language.name == language.name %}selected{% endif %}>
+                                    {{ language.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn-delete delete-meaning">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="button" id="add-meaning-button" class="btn-add">+ Add Meaning</button>
+        </div>
+
+        <!-- Example Sentences Section -->
+        <div class="examples-section">
+            <h3>Example Sentences</h3>
+            <div id="examples-container">
+                {% for example in examples %}
+                    <div class="example-row">
+                        <input type="text" name="example_sentence[]" class="example-input"
+                               value="{{ example.sentence }}" placeholder="Example sentence">
+                        <input type="hidden" name="example_source[]" value="{{ example.source }}">
+                        <button type="button" class="btn-delete delete-example">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="button" id="add-example-button" class="btn-add">+ Add Example</button>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="form-actions">
+            <button type="submit" class="update-button">Save</button>
+            <a href="{% url 'dictionaries:dictionary-detail' user_slug=object.dictionary.folder.user.slug folder_slug=object.dictionary.folder.slug dictionary_slug=object.dictionary.slug %}"
+               class="cancel-button">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript to add/remove rows -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const meaningsContainer = document.getElementById('meanings-container');
+    const examplesContainer = document.getElementById('examples-container');
+
+    // Add new meaning
+    document.getElementById('add-meaning-button').addEventListener('click', () => {
+        const meaningRow = `
+            <div class="meaning-row">
+                <input type="text" name="meaning_description[]" class="meaning-input" placeholder="Enter meaning">
+                <select name="meaning_language[]" class="language-select">
+                    {% for language in languages %}
+                        <option value="{{ language.name }}">{{ language.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn-delete delete-meaning">&times;</button>
+            </div>`;
+        meaningsContainer.insertAdjacentHTML('beforeend', meaningRow);
+    });
+
+    // Add new example
+    document.getElementById('add-example-button').addEventListener('click', () => {
+        const exampleRow = `
+            <div class="example-row">
+                <input type="text" name="example_sentence[]" class="example-input" placeholder="Example sentence">
+                <input type="hidden" name="example_source[]" value="user">
+                <button type="button" class="btn-delete delete-example">&times;</button>
+            </div>`;
+        examplesContainer.insertAdjacentHTML('beforeend', exampleRow);
+    });
+
+    // Delete meaning or example row
+    document.body.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-meaning')) {
+            e.target.parentElement.remove();
+        }
+        if (e.target.classList.contains('delete-example')) {
+            e.target.parentElement.remove();
+        }
+    });
+
+    document.querySelector('form').addEventListener('submit', (e) => {
+        const formData = new FormData(e.target); // Collect all form data
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
+    });
+});
+</script>
+{% endblock %}

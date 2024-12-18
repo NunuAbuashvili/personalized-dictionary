@@ -35,14 +35,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const imageInput = document.querySelector('input[name="{{ profile_form.image.name }}"]');
     const imagePreview = document.getElementById('profile-preview');
 
-    imageInput.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagePreview.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+    if (imageInput) {
+        imageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+    } else {
+        console.error("Element with ID 'imageInput' not found.");
+    }
+});
+
+function showAllDictionaries() {
+    console.log("Showing all dictionaries");
+}
+
+function filterFolders(language) {
+    const folders = document.querySelectorAll('.dictionary-folder');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    // Reset active state on all buttons
+    filterButtons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    folders.forEach(folder => {
+        if (language === 'All' || folder.dataset.language === language) {
+            folder.style.display = 'block';
+        } else {
+            folder.style.display = 'none';
         }
     });
-});
+}

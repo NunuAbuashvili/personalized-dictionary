@@ -14,6 +14,7 @@ from django.utils.html import strip_tags
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
 
+from dictionary.models import Language
 from .decorators import verified_email_required
 from .forms import (CustomUserCreationForm,
                     CustomAuthenticationForm,
@@ -149,32 +150,45 @@ class CustomLoginView(LoginView):
     template_name = 'accounts/login.html'
 
     def get_success_url(self):
-        return reverse_lazy('accounts:view_profile', kwargs={'username': self.request.user.username})
+        next_url = self.request.GET.get('next') or self.request.POST.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy(
+            'accounts:view_profile', 
+            kwargs={'user_slug': self.request.user.slug}
+        )
 
 
 # Update Profile
 @login_required
 @verified_email_required
-def update_profile(request):
+def update_profile(request, user_slug):
     if request.method == 'POST':
-        user_form = UserUpdateForm(request.POST, instance=request.user)
+        user = CustomUser.objects.get(slug=user_slug)
+        user_form = UserUpdateForm(request.POST, instance=user)
         profile_form = UserProfileUpdateForm(request.POST,
                                              request.FILES,
-                                             instance=request.user.profile)
+                                             instance=user.profile)
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
             messages.success(request, _('Your account has been updated.'))
-            return redirect('accounts:view_profile', username=request.user.username)
+            return redirect('accounts:view_profile', user_slug=user.slug)
 
     else:
-        user_form = UserUpdateForm(instance=request.user)
-        profile_form = UserProfileUpdateForm(instance=request.user)
+        user = CustomUser.objects.get(slug=user_slug)
+        user_form = UserUpdateForm(instance=user)
+        profile_form = UserProfileUpdateForm(instance=user)
+
+    folder_languages = Language.objects.filter(
+            folders__user = user
+        ).distinct()
 
     context = {
         'user_form': user_form,
         'profile_form': profile_form,
         'MEDIA_URL': settings.MEDIA_URL,
+        'folder_languages': folder_languages,
     }
 
     return render(request, 'accounts/profile-update.html', context)
@@ -183,9 +197,11 @@ def update_profile(request):
 # View Profile
 @login_required
 @verified_email_required
-def view_user_profile(request, username):
+def view_user_profile(request, user_slug):
     try:
-        user = CustomUser.objects.get(username=username)
+        user = CustomUser.annotate_all_statistics(
+            CustomUser.objects.filter(slug=user_slug)
+        ).get(slug=user_slug)
     except CustomUser.DoesNotExist:
         raise Http404(_('User does not exist'))
 
@@ -198,9 +214,14 @@ def view_user_profile(request, username):
     except Profile.DoesNotExist:
         profile = None
 
+    folder_languages = Language.objects.filter(
+            folders__user = user
+        ).distinct()
+
     context = {
         'user': user,
         'profile': profile,
+        'folder_languages': folder_languages,
     }
 
     return render(request, 'accounts/profile.html', context)

@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
+OPEN_API_KEY = os.getenv('OPEN_API_KEY')
 
 DEBUG = True
 ALLOWED_HOSTS = ['*']
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "accounts.apps.AccountsConfig",
     "dictionary.apps.DictionaryConfig",
+    "language_resources.apps.LanguageResourcesConfig",
 ]
 
 MIDDLEWARE = [
@@ -61,6 +63,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "dictionary.context_processors.folder_language_data"
             ],
         },
     },

@@ -1,5 +1,7 @@
 from django.db import models
-from django.db.models import UniqueConstraint
+from django.db.models import UniqueConstraint, Count
+from django.urls import reverse
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import CustomUser
@@ -12,6 +14,12 @@ class Language(models.Model):
         ('Korean', _('Korean')),
     ]
     name = models.CharField(choices=LANGUAGE_CHOICES, max_length=15)
+    slug = models.SlugField(_('slug'), unique=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -23,10 +31,16 @@ class Language(models.Model):
 
 class DictionaryFolder(models.Model):
     name = models.CharField(_('dictionary folder name'), max_length=255)
+    slug = models.SlugField(_('slug'), unique=True, allow_unicode=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='folders')
     language = models.ForeignKey(Language, on_delete=models.CASCADE, related_name='folders')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name, allow_unicode=True)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.name} ({self.language.name})'
@@ -38,13 +52,32 @@ class DictionaryFolder(models.Model):
             UniqueConstraint(fields=('user', 'name'), name='unique_folder_per_user')
         ]
 
+    def get_absolute_url(self):
+        return reverse(
+            'dictionaries:folder-detail',
+            kwargs={'folder_slug': self.slug, 'user_slug': self.user.slug}
+        )
+
+    @classmethod
+    def annotate_all_statistics(cls, queryset):
+        return queryset.annotate(
+            dictionary_count=Count('dictionaries', distinct=True),
+            entry_count=Count('dictionaries__entries', distinct=True),
+        )
+
 
 class Dictionary(models.Model):
     name = models.CharField(_('dictionary name'), max_length=255)
+    slug = models.SlugField(_('slug'), unique=True, allow_unicode=True)
     description = models.TextField(_('dictionary description'), blank=True, null=True)
     folder = models.ForeignKey(DictionaryFolder, on_delete=models.CASCADE, related_name='dictionaries')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -55,6 +88,13 @@ class Dictionary(models.Model):
         constraints = [
             UniqueConstraint(fields=('folder', 'name'), name='unique_dictionary_per_folder')
         ]
+
+    def get_absolute_url(self):
+        return reverse('dictionaries:dictionary-detail', kwargs={
+            'user_slug': self.folder.user.slug,
+            'folder_slug': self.folder.slug,
+            'dictionary_slug': self.slug
+        })
 
 
 class Example(models.Model):
@@ -72,9 +112,15 @@ class Example(models.Model):
 class DictionaryEntry(models.Model):
     dictionary = models.ForeignKey(Dictionary, on_delete=models.CASCADE, related_name='entries')
     word = models.CharField(_('dictionary entry'), max_length=255)
+    slug = models.SlugField(_('slug'), unique=True, allow_unicode=True)
     examples = models.ManyToManyField(Example, related_name='entries')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.word)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.word
@@ -85,6 +131,14 @@ class DictionaryEntry(models.Model):
         constraints = [
             UniqueConstraint(fields=('dictionary', 'word'), name='unique_entry_per_dictionary')
         ]
+
+    def get_absolute_url(self):
+        return reverse('dictionaries:entry-detail', kwargs={
+            'user_slug': self.dictionary.folder.user.slug,
+            'folder_slug': self.dictionary.folder.slug,
+            'dictionary_slug': self.dictionary.slug,
+            'entry_slug': self.slug,
+        })
 
 
 class Meaning(models.Model):

@@ -15,7 +15,7 @@ class CustomUserAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (_('Account Information'), {
-            'fields': ('username', 'email', 'password', 'is_active', 'is_verified')
+            'fields': ('username', 'email', 'slug', 'password', 'is_active', 'is_verified')
         }),
         (_('Personal Details'), {
             'fields': ('first_name', 'last_name')

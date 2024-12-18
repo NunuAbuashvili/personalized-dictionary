@@ -5,6 +5,8 @@ from typing import Any, Dict
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.db.models import Count
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 
@@ -80,11 +82,17 @@ class CustomUser(AbstractUser):
     """
     email = models.EmailField(_('email address'), unique=True)
     is_verified = models.BooleanField(_('email verified'), default=False)
+    slug = models.SlugField(_('slug'), unique=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.username)
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.email
@@ -92,6 +100,21 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name = _('User')
         verbose_name_plural = _('Users')
+
+    @property
+    def languages(self):
+        return ", ".join(
+            language for language in self.folders
+            .values_list('language__name', flat=True).distinct()
+        )
+
+    @classmethod
+    def annotate_all_statistics(cls, queryset):
+        return queryset.annotate(
+            folder_count=Count('folders', distinct=True),
+            dictionary_count=Count('folders__dictionaries', distinct=True),
+            entry_count=Count('folders__dictionaries__entries', distinct=True),
+        )
 
 
 class UserProfile(models.Model):

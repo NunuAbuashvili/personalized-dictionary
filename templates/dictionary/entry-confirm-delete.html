@@ -1,0 +1,41 @@
+{% extends 'accounts/profile-base.html' %}
+{% load static %}
+
+{% block title %}Delete {{ object.name }}{% endblock %}
+
+{% block profile_information %}
+<div class="profile-info">
+    <img src="{{ user.profile.image.url }}" alt="Profile image" class="profile-pic">
+    <div class="profile-details">
+        <h4 class="profile-username">{{ user.username }}</h4>
+        <h4 class="profile-email">{{ user.email }}</h4>
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block page_content %}
+<div class="dictionary-folders-container">
+    <div class="delete-section">
+        <form method="post" class="delete-folder-form">
+            {% csrf_token %}
+            <div class="delete-confirmation">
+                <h3 class="warning-title">Are you sure you want to delete "{{ object.word }}"?</h3>
+                <p class="warning-text">Warning: This will permanently delete the dictionary entry.</p>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="update-button">Confirm Delete</button>
+                <a href="{% url 'dictionaries:dictionary-detail' user_slug=user.slug folder_slug=object.dictionary.folder.slug dictionary_slug=object.dictionary.slug %}"
+                   class="cancel-button">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

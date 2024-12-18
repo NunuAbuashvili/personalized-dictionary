@@ -29,6 +29,7 @@
 
                 <form method="POST" action="{% url 'accounts:login' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.GET.next }}">
 
                     <div class="input-field">
                         {{ form.username }}

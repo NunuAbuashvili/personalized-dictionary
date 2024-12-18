@@ -1,0 +1,91 @@
+{% extends 'accounts/profile-base.html' %}
+{% load static %}
+
+{% block title %}{{ dictionary.name }}{% endblock %}
+
+{% block page_content %}
+<!-- Detailed Dictionary Section -->
+<div class="dictionary-details-container">
+    <div class="entry-header">
+        <h2 class="entry-title">{{ dictionary.name }}</h2>
+        {% if dictionary.description %}
+            <p class="entry-language">{{ dictionary.description }}</p>
+        {% else %}
+            <p class="entry-language">No description.</p>
+        {% endif %}
+
+        {% if perms.dictionaries.change_dictionary %}
+            <div class="dictionary-actions">
+                <a href="{% url 'dictionaries:dictionary-update' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button">Update</a>
+                <a href="{% url 'dictionaries:dictionary-delete' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button">Delete</a>
+                <a href="{% url 'dictionaries:entry-create' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button add-entry-button">+</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="dictionary-search-bar">
+        <form method="get">
+            <div class="search-sort-container">
+                {{ filter.form.as_p }}
+                <button class="search-button">Search</button>
+            </div>
+        </form>
+
+        {% if filter.form.search.value %}
+            <small class="search-results">
+                {% if filter.qs|length == 1 %}
+                    Search result: {{ filter.qs|length }} result
+                {% else %}
+                    Search results: {{ filter.qs|length }} results
+                {% endif %}
+            </small>
+        {% endif %}
+    </div>
+
+    <div class="dictionary-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Entry</th>
+                    <th>Meaning</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in object_list %}
+                <tr onclick="window.location.href='{% url 'dictionaries:entry-detail' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug entry_slug=entry.slug %}'">
+                    <td class="entry">{{ entry.word }}</td>
+                    <td>
+                        {% for meaning in entry.meanings.all %}
+                             <div class="meaning">{{ meaning.description }}</div>
+                        {% empty %}
+                            <div class="meaning">No meanings available</div>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Section -->
+    {% if is_paginated %}
+        <div class="pagination">
+            <div class="pagination-controls">
+                {% if page_obj.has_previous %}
+                    <a href="{% querystring page=1 %}" class="pagination-first">&laquo; First</a>
+                    <a href="{% querystring page=page_obj.previous_page_number %}" class="pagination-prev">Previous</a>
+                {% endif %}
+
+                <span class="pagination-info">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="{% querystring page=page_obj.next_page_number %}" class="pagination-next">Next</a>
+                    <a href="{% querystring page=page_obj.paginator.num_pages %}" class="pagination-last">Last &raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

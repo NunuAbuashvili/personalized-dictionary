@@ -1,7 +1,5 @@
 from django.contrib.auth.views import (
-    LogoutView,
     PasswordResetDoneView,
-    PasswordResetConfirmView,
     PasswordResetCompleteView
 )
 from django.urls import path, include
@@ -27,6 +25,6 @@ urlpatterns = [
     path('password-reset-complete/',PasswordResetCompleteView.as_view(
         template_name='accounts/password-reset-complete.html'
     ),name='password_reset_complete'),
-    path('profile/update/', views.update_profile, name='update_profile'),
-    path('profile/<str:username>/', views.view_user_profile, name='view_profile'),
+    path('profile/<slug:user_slug>/update/', views.update_profile, name='update_profile'),
+    path('profile/<slug:user_slug>/', views.view_user_profile, name='view_profile'),
 ]

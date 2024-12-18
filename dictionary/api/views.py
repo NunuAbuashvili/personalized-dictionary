@@ -20,7 +20,8 @@ from .serializers import (DictionaryFolderSerializer,
 @extend_schema(tags=['Dictionaries'])
 class DictionaryFolderViewSet(ModelViewSet):
     queryset = (DictionaryFolder.objects.select_related('user')
-                .prefetch_related('dictionaries'))
+                .prefetch_related('dictionaries')
+                .order_by('-created_at'))
     serializer_class = DictionaryFolderSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsUserProfileOrReadOnly)
     filter_backends = (filters.DjangoFilterBackend,)
@@ -31,7 +32,8 @@ class DictionaryFolderViewSet(ModelViewSet):
 class DictionaryViewSet(ModelViewSet):
     queryset = (Dictionary.objects.select_related('folder__user')
                 .prefetch_related('entries', 'entries__examples',
-                                  'entries__meanings','entries__meanings__target_language'))
+                                  'entries__meanings','entries__meanings__target_language')
+                .order_by('-created_at'))
     serializer_class = DictionarySerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsDictionaryAuthorOrReadOnly)
     filter_backends = (filters.DjangoFilterBackend,)
@@ -49,7 +51,7 @@ class DictionaryEntryViewSet(ModelViewSet):
         'meanings',
         'meanings__target_language',
         'examples'
-    )
+    ).order_by('-created_at')
     permission_classes = (IsAuthenticatedOrReadOnly, IsDictionaryAuthorOrReadOnly)
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = DictionaryEntryFilter

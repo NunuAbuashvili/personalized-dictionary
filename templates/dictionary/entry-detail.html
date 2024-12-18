@@ -1,0 +1,58 @@
+{% extends 'accounts/profile-base.html' %}
+{% load highlight %}
+{% load static %}
+
+{% block title %}{{ entry.word }}{% endblock %}
+
+{% block profile_information %}
+{% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block page_content %}
+<div class="dictionary-entry-details">
+    <!-- Entry Word -->
+    <div class="entry-header">
+        <h1 class="entry-title">{{ entry.word }}</h1>
+        <p class="entry-language"><em>Language: {{ entry.dictionary.folder.language }}</em></p>
+    </div>
+
+    <!-- Meanings Section -->
+    <div class="entry-meanings">
+        <h2>Meanings</h2>
+        {% for meaning in entry.meanings.all %}
+            <div class="meaning-item">
+                <p><strong>{{ meaning.target_language }}: </strong>{{ meaning.description }}</p>
+            </div>
+        {% empty %}
+            <p>No meanings available for this entry.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Example Sentences Section -->
+    <div class="entry-examples">
+        <h2>Example Sentences</h2>
+        {% for example in entry.examples.all %}
+            <div class="example-item">
+                <p>{{ example.sentence|highlight:entry.word|safe }}</p>
+            </div>
+        {% empty %}
+            <p>No example sentences available for this entry.</p>
+        {% endfor %}
+    </div>
+
+    {% if perms.entries.change_entry %}
+        <div class="dictionary-actions">
+            <a href="{% url 'dictionaries:entry-update' user_slug=user.slug folder_slug=entry.dictionary.folder.slug dictionary_slug=entry.dictionary.slug entry_slug=entry.slug %}"
+               class="dictionary-actions-button">Update</a>
+            <a href="{% url 'dictionaries:entry-delete' user_slug=user.slug folder_slug=entry.dictionary.folder.slug dictionary_slug=entry.dictionary.slug entry_slug=entry.slug %}"
+               class="dictionary-actions-button">Delete</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

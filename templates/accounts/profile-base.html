@@ -1,0 +1,87 @@
+{% extends 'accounts/accounts-base.html' %}
+{% load static %}
+
+{% block title %}{% endblock %}
+{% block body_class %}profile-page-body{% endblock %}
+
+{% block content %}
+<div class="navbar">
+    <nav class="navbar-content">
+        <ul class="navbar-links">
+            <li><a href="{% url 'accounts:view_profile' user_slug=user.slug %}">Home</a></li>
+            <li><a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}">My Folders</a></li>
+            <li><a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}">My Dictionaries</a></li>
+        </ul>
+        {% if user.profile.image %}
+            <img src="{{ user.profile.image.url }}" alt="Profile image" class="user-pic" onclick="toggleMenu()">
+        {% else %}
+            <img src="{{ MEDIA_URL }}default.jpeg" alt="Default profile image" class="user-pic" onclick="toggleMenu()">
+        {% endif %}
+
+        <div class="sub-menu-wrap" id="subMenu">
+            <div class="sub-menu">
+                <div class="user-info">
+                    {% if user.profile.image %}
+                        <img src="{{ user.profile.image.url }}" alt="Profile">
+                    {% else %}
+                        <img src="{{ MEDIA_URL }}default.jpeg" alt="Default Profile">
+                    {% endif %}
+                    <h3>{{ user.username }}</h3>
+                </div>
+                <hr>
+
+                <a href="{% url 'accounts:update_profile' user_slug=user.slug %}" class="sub-menu-link">
+                    <p>Edit Profile</p>
+                    <span>></span>
+                </a>
+                <a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}" class="sub-menu-link">
+                    <p>My Folders</p>
+                    <span>></span>
+                </a>
+                <a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}" class="sub-menu-link">
+                    <p>My Dictionaries</p>
+                    <span>></span>
+                </a>
+                <a href="{% url 'accounts:logout' %}" class="sub-menu-link">
+                    <p>Logout</p>
+                    <span>></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<div class="profile-container">
+    <div class="profile-content">
+    {% block profile_information %}
+
+    {% endblock %}
+
+        {% block page_content %}
+
+        {% endblock %}
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="profile-sidebar">
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'accounts:view_profile' user_slug=user.slug %}">My Account</a></li>
+            <hr>
+            <li><a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}">My Folders</a>
+                <ul class="language-menu">
+                    {% for language in folder_languages %}
+                        <li><a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}"
+                               onclick="filterFolders('{{ language.name }}')">{{ language.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            <hr>
+            <li><a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}">My Dictionaries</a>
+            <hr>
+            <li><a href="{% url 'accounts:logout' %}">Logout</a></li>
+            <hr>
+        </ul>
+    </div>
+</div>
+{% endblock %}
