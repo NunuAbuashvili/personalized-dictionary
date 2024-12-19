@@ -1,17 +1,19 @@
-import openai
+from openai import OpenAI
 from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import IntegrityError, transaction
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import (ListView,
                                   DetailView,
                                   CreateView,
                                   UpdateView,
-                                  DeleteView)
+                                  DeleteView, TemplateView)
 from django.views.generic.list import MultipleObjectMixin
 import json
 
@@ -294,7 +296,7 @@ def fetch_data_from_openai(entry_word, target_languages):
         "{\n"
         '  "word": "{word}",\n'
         '  "definition": [\n'
-        '    {"language": "{language}", "definition": "{definiton}"},\n'
+        '    {"language": "{language}", "definition": "{definition}"},\n'
         "  ],\n"
         '  "translations": [\n'
         '    {"language": "{language1}", "translation": "{translation1}"},\n'
@@ -329,7 +331,7 @@ def fetch_data_from_openai(entry_word, target_languages):
     translations_data = data['translations']
     examples_data = data['examples']
 
-    return definiton, translations_data, examples_data
+    return definition, translations_data, examples_data
 
 
 # Dictionary Entry views (Detail, Create, Update, Delete)
@@ -362,48 +364,110 @@ class EntryCreateView(CustomLoginRequiredMixin, CreateView):
         context['dictionary'] = dictionary
         return context
 
-    @transaction.atomic
     def post(self, request, *args, **kwargs):
-        self.object = None
-        form = self.get_form()
+        dictionary_slug = self.kwargs.get('dictionary_slug')
+        dictionary = Dictionary.objects.get(slug=dictionary_slug)
+        folder_slug = dictionary.folder.slug
+        user_slug = self.kwargs.get('user_slug')
+        word = request.POST.get('word', '').strip()
+        target_languages = request.POST.get('translation_languages')
 
-        word = request.POST.get('word', '').strip().capitalize()
-        user = request.user
+        request.session['entry_creation_data'] = {
+            'word': word,
+            'target_languages': target_languages,
+            'user_slug': user_slug,
+            'folder_slug': folder_slug,
+            'dictionary_slug': dictionary_slug,
+        }
 
-        # Check if the word exists in any of the user's dictionaries
-        existing_entry = DictionaryEntry.objects.filter(
-            dictionary__folder__user=user,
-            word=word
-        ).first()
+        url = reverse('dictionaries:generate-entry-data', kwargs={
+            'user_slug': user_slug,
+            'folder_slug': folder_slug,
+            'dictionary_slug': dictionary_slug,
+        })
+        return redirect(url)
 
-        if existing_entry:
-            messages.warning(request, _(
-                f'You have already saved this word. Dictionary: "{existing_entry.dictionary.name}", '
-                f'folder: "{existing_entry.dictionary.folder.name}".'
-            ))
-            return self.form_invalid(form)
 
-        # Proceed with form processing
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
-        return self.form_invalid(form)
+class GenerateEntryDataView(CustomLoginRequiredMixin, TemplateView):
+    template_name = 'dictionary/entry-create-form.html'
 
-    @transaction.atomic
-    def form_valid(self, form):
+    def get(self, request, *args, **kwargs):
+        entry_data = request.session.get('entry_creation_data')
+
+        if not entry_data:
+            messages.error(request, _('No word data found. Please start again.'))
+            return redirect('dictionaries:entry-create',
+                            user_slug=entry_data['user_slug'],
+                            folder_slug=entry_data['folder_slug'],
+                            dictionary_slug=entry_data['dictionary_slug'])
+
         try:
-            dictionary_slug = self.kwargs.get('dictionary_slug')
+            word = entry_data['word']
+            target_languages = entry_data['target_languages']
+
+            definition, translations, examples = fetch_data_from_openai(word, target_languages)
+
+            context = {
+                'word': word,
+                'definition': definition,
+                'translations': translations,
+                'examples': examples,
+                'languages': Language.objects.only('name'),
+                'user_slug': entry_data['user_slug'],
+                'folder_slug': entry_data['folder_slug'],
+                'dictionary_slug': entry_data['dictionary_slug'],
+            }
+
+            return render(request, self.template_name, context)
+
+        except Exception as error:
+            messages.error(request, f'Error generating data: {str(error)}')
+            return redirect('dictionaries:entry-create',
+                            user_slug=entry_data['user_slug'],
+                            folder_slug=entry_data['folder_slug'],
+                            dictionary_slug=entry_data['dictionary_slug'])
+
+    def post(self, request, *args, **kwargs):
+        try:
+            entry_data = request.session.get('entry_creation_data')
+            if not entry_data:
+                messages.error(request, _('Session expired. Please start again.'))
+                return redirect('dictionaries:entry-create',
+                                user_slug=entry_data['user_slug'],
+                                folder_slug=entry_data['folder_slug'],
+                                dictionary_slug=entry_data['dictionary_slug'])
+
+            dictionary_slug = entry_data['dictionary_slug']
             dictionary = Dictionary.objects.get(slug=dictionary_slug)
-            form.instance.dictionary = dictionary
 
-            # Create the dictionary entry
-            entry = form.save()
+            entry = DictionaryEntry.objects.create(
+                dictionary=dictionary,
+                word=entry_data['word']
+            )
 
-            # Process meanings
-            meaning_descriptions = self.request.POST.getlist('meaning_description[]')
+            definition = request.POST.get('definition', '').strip()
+            translations = request.POST.getlist('translations[]')
+            translation_languages = request.POST.getlist('translation_languages[]')
+
+            if definition:
+                Meaning.objects.create(
+                    entry=entry,
+                    description=definition,
+                    target_language=entry.dictionary.folder.language,
+                )
+
+            for language, translation in zip(translation_languages, translations):
+                if language and translation:
+                    target_language = Language.objects.get(name=language)
+                    Meaning.objects.create(
+                        entry=entry,
+                        description=translation,
+                        target_language=target_language,
+                    )
+
+            meaning_descriptions = request.POST.getlist('meaning_description[]')
             meaning_languages = self.request.POST.getlist('meaning_language[]')
 
-            # Create meanings
             for description, language_name in zip(meaning_descriptions, meaning_languages):
                 if description.strip():
                     language = Language.objects.get(name=language_name)
@@ -413,8 +477,7 @@ class EntryCreateView(CustomLoginRequiredMixin, CreateView):
                         target_language=language
                     )
 
-            # Process examples
-            example_sentences_json = self.request.POST.get('example_sentences[]', '[]')
+            example_sentences_json = request.POST.get('example_sentences[]', '[]')
 
             try:
                 # Parse the JSON string into a Python list
@@ -434,12 +497,17 @@ class EntryCreateView(CustomLoginRequiredMixin, CreateView):
             except json.JSONDecodeError as error:
                 print("Error decoding JSON:", error)
 
+            del request.session['entry_creation_data']
+
             messages.success(self.request, _('Entry created successfully.'))
-            return super().form_valid(form)
+            return redirect(entry.get_absolute_url())
 
         except Dictionary.DoesNotExist:
             messages.error(self.request, _('Selected dictionary does not exist.'))
-            return self.form_invalid(form)
+            return self.get(request, *args, **kwargs)
+        except Exception as error:
+            messages.error(request, f_('Error creating entry: {str(error)}'))
+            return self.get(request, *args, **kwargs)
 
 
 class EntryUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, UpdateView):

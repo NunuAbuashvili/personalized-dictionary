@@ -1,0 +1,101 @@
+{% extends 'accounts/profile-base.html' %}
+
+{% block title %}Add Dictionary Entry{% endblock %}
+
+{% block page_content %}
+<div class="generate-entry-container">
+    <h1>Generate Entry for "{{ word }}"</h1>
+
+    <form method="post" action="">
+        {% csrf_token %}
+
+        <!-- Generated Definition -->
+        <div class="generated-section">
+            <h3>Definition</h3>
+            <p>{{ definition }}</p>
+        </div>
+
+        <!-- Generated Translations -->
+        <div class="translations-section">
+            <h3>Translations</h3>
+            {% for translation in translations %}
+                <p><strong>{{ translation.language }}:</strong> {{ translation.translation }}</p>
+            {% endfor %}
+        </div>
+
+        <div class="meanings-section">
+            <label>Add Meanings</label>
+            <div id="meanings-container">
+                <div class="meaning-row">
+                    <input type="text" name="meaning_description[]" class="meaning-input"
+                           placeholder="Enter meaning">
+                    <select name="meaning_language[]" class="language-select">
+                        {% for language in languages %}
+                            <option value="{{ language }}">{{ language }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn-delete delete-meaning">&times;</button>
+                </div>
+            </div>
+            <button type="button" id="add-meaning-button" class="btn-add">+ Add Meaning</button>
+        </div>
+
+        <!-- Examples Section -->
+        <div class="examples-section">
+            <h3>Generated Examples</h3>
+            {% for example in examples %}
+                <div class="example-item">
+                    <input type="checkbox" name="example_sentences[]"
+                           value="{{ example.sentence }}" id="example-{{ forloop.counter }}">
+                    <label for="example-{{ forloop.counter }}">{{ example.sentence }}</label>
+                </div>
+            {% endfor %}
+
+            <!-- Add Custom Example -->
+            <div class="add-custom-example">
+                <label for="custom-example">Add your own example</label>
+                <input type="text" name="custom_example" class="form-control"
+                       placeholder="Write your example sentence">
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <button type="submit" class="update-button">Save Entry</button>
+            <a href="{% url 'dictionaries:entry-create' user_slug=user_slug folder_slug=folder_slug dictionary_slug=dictionary_slug %}"
+               class="cancel-button">Back</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const meaningsContainer = document.getElementById("meanings-container");
+        const addMeaningButton = document.getElementById("add-meaning-button");
+
+        function createMeaningRow() {
+            const meaningRow = document.createElement("div");
+            meaningRow.classList.add("meaning-row");
+            meaningRow.innerHTML = `
+                <input type="text" name="meaning_description[]" class="meaning-input" placeholder="Enter meaning">
+                <select name="meaning_language[]" class="language-select">
+                    {% for language in languages %}
+                        <option value="{{ language }}">{{ language }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn-delete delete-meaning">&times;</button>
+            `;
+            meaningsContainer.appendChild(meaningRow);
+            addDeleteListener(meaningRow.querySelector('.delete-meaning'), meaningRow);
+        }
+
+        function addDeleteListener(button, parentElement) {
+            button.addEventListener("click", function () {
+                parentElement.remove();
+            });
+        }
+
+        addMeaningButton.addEventListener("click", createMeaningRow);
+    });
+</script>
+{% endblock %}

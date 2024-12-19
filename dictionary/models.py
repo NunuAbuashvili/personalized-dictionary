@@ -114,6 +114,7 @@ class DictionaryEntry(models.Model):
     word = models.CharField(_('dictionary entry'), max_length=255)
     slug = models.SlugField(_('slug'), unique=True, allow_unicode=True)
     examples = models.ManyToManyField(Example, related_name='entries')
+    notes = models.TextField(_('entry notes'), blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
