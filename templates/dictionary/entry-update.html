@@ -18,7 +18,7 @@
     <h1 class="add-entry-title">Update Entry</h1>
 
     <!-- Entry Form -->
-    <form method="post" action="">
+    <form method="post" action="{% url 'dictionaries:entry-update' user_slug=object.dictionary.folder.user.slug folder_slug=object.dictionary.folder.slug dictionary_slug=object.dictionary.slug entry_slug=object.slug %}" enctype="multipart/form-data">
         {% csrf_token %}
 
         <!-- Entry Word -->
@@ -37,9 +37,9 @@
                                value="{{ meaning.description }}" placeholder="Enter meaning">
                         <select name="meaning_language[]" class="language-select">
                             {% for language in languages %}
-                                <option value="{{ language.name }}"
-                                    {% if meaning.target_language.name == language.name %}selected{% endif %}>
-                                    {{ language.name }}
+                                <option value="{{ language }}"
+                                    {% if meaning.target_language.name == language %}selected{% endif %}>
+                                    {{ language }}
                                 </option>
                             {% endfor %}
                         </select>
@@ -53,10 +53,10 @@
         <!-- Example Sentences Section -->
         <div class="examples-section">
             <h3>Example Sentences</h3>
-            <div id="examples-container">
+            <div id="examples-container" class="update-examples-container">
                 {% for example in examples %}
                     <div class="example-row">
-                        <input type="text" name="example_sentence[]" class="example-input"
+                        <input type="text" name="example_sentence[]" class="example-input update-example-input"
                                value="{{ example.sentence }}" placeholder="Example sentence">
                         <input type="hidden" name="example_source[]" value="{{ example.source }}">
                         <button type="button" class="btn-delete delete-example">&times;</button>
@@ -64,6 +64,21 @@
                 {% endfor %}
             </div>
             <button type="button" id="add-example-button" class="btn-add">+ Add Example</button>
+        </div>
+
+        <div class="form-group notes-container">
+            {{ form.notes.label }}
+            {{ form.notes }}
+        </div>
+
+        <div class="form-group">
+            {% if form.instance.image %}
+                <div id="current-image-preview" class="mb-3">
+                    <img id="current-img" src="{{ form.instance.image.url }}" alt="Current image" class="img-thumbnail">
+                    <img id="preview-img" class="img-thumbnail" alt="Image preview" style="display: none;">
+                </div>
+            {% endif %}
+            {{ form.image }}
         </div>
 
         <!-- Submit Buttons -->
@@ -88,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input type="text" name="meaning_description[]" class="meaning-input" placeholder="Enter meaning">
                 <select name="meaning_language[]" class="language-select">
                     {% for language in languages %}
-                        <option value="{{ language.name }}">{{ language.name }}</option>
+                        <option value="{{ language }}">{{ language }}</option>
                     {% endfor %}
                 </select>
                 <button type="button" class="btn-delete delete-meaning">&times;</button>
@@ -100,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-example-button').addEventListener('click', () => {
         const exampleRow = `
             <div class="example-row">
-                <input type="text" name="example_sentence[]" class="example-input" placeholder="Example sentence">
+                <input type="text" name="example_sentence[]" class="example-input update-example-input" placeholder="Example sentence">
                 <input type="hidden" name="example_source[]" value="user">
                 <button type="button" class="btn-delete delete-example">&times;</button>
             </div>`;
@@ -121,6 +136,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(e.target); // Collect all form data
         for (let [key, value] of formData.entries()) {
             console.log(`${key}: ${value}`);
+        }
+    });
+
+    document.getElementById('id_image').addEventListener('change', function(event) {
+        const previewImg = document.getElementById('preview-img');
+        const currentImg = document.getElementById('current-img');
+
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+
+                if (currentImg) {
+                    currentImg.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            previewImg.style.display = 'none';
+
+            if (currentImg) {
+                currentImg.style.display = 'block';
+            }
         }
     });
 });

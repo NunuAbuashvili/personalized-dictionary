@@ -5,10 +5,10 @@
 
 {% block profile_information %}
 <div class="profile-info">
-        <img src="{{ user.profile.image.url }}" alt="Profile image" class="profile-pic">
+        <img src="{{ page_user.profile.image.url }}" alt="Profile image" class="profile-pic">
         <div class="profile-details">
-            <h4 class="profile-username">{{ user.username }}</h4>
-            <h4 class="profile-email">{{ user.email }}</h4>
+            <h4 class="profile-username">{{ page_user.username }}</h4>
+            <h4 class="profile-email">{{ page_user.email }}</h4>
             {% if messages %}
                 <div class="messages">
                     {% for message in messages %}
@@ -24,12 +24,18 @@
 <div class="user-details-box">
     <h4>User Details</h4>
     <ul class="user-details-list">
-        <li>Country: {{ user.profile.country.name }}</li>
-        <li>Date of Birth: {{ user.profile.date_of_birth }}</li>
-        <li>Languages: {{ user.languages }}</li>
-        <li>Number of Dictionary Folders: {{ user.folder_count }}</li>
-        <li>Number of Dictionaries: {{ user.dictionary_count }}</li>
-        <li>Number of Total Entries: {{ user.entry_count }}</li>
+        <li>Country: {{ page_user.profile.country.name }}</li>
+        <li>Date of Birth: {{ page_user.profile.date_of_birth }}</li>
+        <li>Languages: {{ page_user.languages }}</li>
+        <li>Number of Dictionary Folders: {{ page_user.folder_count }}</li>
+        <li>Number of Dictionaries: {{ page_user.dictionary_count }}</li>
+        <li>Number of Total Entries: {{ page_user.entry_count }}</li>
     </ul>
+    {% if page_user != user %}
+        <div class="folder-actions">
+            <a href="{% url 'dictionaries:folder-list' user_slug=page_user.slug %}"
+               class="dictionary-actions-button">Folders</a>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

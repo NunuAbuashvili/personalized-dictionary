@@ -22,6 +22,12 @@
         <p class="entry-language"><em>Language: {{ entry.dictionary.folder.language }}</em></p>
     </div>
 
+    <div class="entry-image">
+        {% if entry.image %}
+            <img src="{{ entry.image.url }}" alt="An image related to the dictionary entry">
+        {% endif %}
+    </div>
+
     <!-- Meanings Section -->
     <div class="entry-meanings">
         <h2>Meanings</h2>
@@ -46,7 +52,19 @@
         {% endfor %}
     </div>
 
-    {% if perms.entries.change_entry %}
+    <!-- Notes Section -->
+    <div class="entry-examples">
+        <h2>Notes</h2>
+        <div class="meaning-item">
+            {% if entry.notes %}
+                <p>{{ entry.notes }}</p>
+            {% else %}
+                <p>You have not added any notes.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if entry.dictionary.folder.user == user %}
         <div class="dictionary-actions">
             <a href="{% url 'dictionaries:entry-update' user_slug=user.slug folder_slug=entry.dictionary.folder.slug dictionary_slug=entry.dictionary.slug entry_slug=entry.slug %}"
                class="dictionary-actions-button">Update</a>

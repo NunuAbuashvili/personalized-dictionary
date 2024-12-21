@@ -5,10 +5,10 @@
 
 {% block profile_information %}
 <div class="profile-info">
-<img src="{{ user.profile.image.url }}" alt="Profile image" class="profile-pic">
+    <img src="{{ dictionary_author.profile.image.url }}" alt="Profile image" class="profile-pic">
     <div class="profile-details">
-        <h4 class="profile-username">{{ user.username }}</h4>
-        <h4 class="profile-email">{{ user.email }}</h4>
+        <h4 class="profile-username">{{ dictionary_author.username }}</h4>
+        <h4 class="profile-email">{{ dictionary_author.email }}</h4>
         {% if messages %}
             <div class="messages">
                 {% for message in messages %}
@@ -23,16 +23,21 @@
 {% block page_content %}
 <!-- Dictionaries Section -->
 <div class="dictionary-folders-container">
-    <div class="dictionary-folders-filter">
-        <button class="filter-btn active" onclick="filterFolders('All')">All</button>
-        {% for language in folder_languages %}
-            <button class="filter-btn" onclick="filterFolders('{{ language.name }}')">
-                {{ language.name }}</button>
-        {% endfor %}
-    </div>
+    {% if object_list %}
+        <div class="dictionary-search-bar">
+            <form method="get">
+                <div class="search-sort-container">
+                    {{ filter.form.as_p }}
+                    <button class="search-button">Search</button>
+                </div>
+            </form>
+        </div>
+    {% else %}
+        <p class="no-results-message">You have not added any dictionaries yet.</p>
+    {% endif %}
 
     <div class="dictionary-folders-grid">
-        {% for dictionary in dictionaries %}
+        {% for dictionary in object_list %}
             <a href="{% url 'dictionaries:dictionary-detail' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}"
                class="dictionary-folder-link">
                 <div class="dictionary-folder" data-language="{{ dictionary.folder.language }}">

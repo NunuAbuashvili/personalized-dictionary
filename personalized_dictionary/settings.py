@@ -1,3 +1,4 @@
+from celery import schedules
 from dotenv import load_dotenv
 
 from datetime import timedelta
@@ -28,9 +29,10 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "drf_spectacular",
+    "django_celery_beat",
     "accounts.apps.AccountsConfig",
     "dictionary.apps.DictionaryConfig",
-    "language_resources.apps.LanguageResourcesConfig",
+    "leaderboard.apps.LeaderboardConfig",
 ]
 
 MIDDLEWARE = [
@@ -63,7 +65,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "dictionary.context_processors.folder_language_data"
+                "dictionary.context_processors.folder_language_data",
+                "dictionary.context_processors.search_filter"
             ],
         },
     },
@@ -143,6 +146,19 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Accounts', 'description': 'Operations related to user account'},
         {'name': 'Dictionaries', 'description': 'Operations related to dictionary'},
     ]
+}
+
+# Celery Settings
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Tbilisi'
+CELERY_BEAT_SCHEDULE = {
+    'reset-weekly-stats': {
+        'task': 'leaderboard.tasks.reset_weekly_stats',
+        'schedule': schedules.crontab(hour=0, minute=0, day_of_week=0),
+    },
 }
 
 # Internationalization & Localization

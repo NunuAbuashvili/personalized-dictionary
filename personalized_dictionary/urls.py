@@ -9,13 +9,11 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include('dictionary.urls', namespace='dictionaries')),
+    path('leaderboard/', include('leaderboard.urls'), name='leaderboard'),
     path('api/account/', include('accounts.api.urls', namespace='accounts_api')),
     path('account/', include('accounts.urls', namespace='accounts')),
     path('api/folders/', include('dictionary.api.urls', namespace='dictionaries_api')),
-    path('account/profile/<str:user_slug>/', include(
-        'dictionary.urls', namespace='dictionaries')
-         ),
-    path('language/resources/', include('language_resources.urls', namespace='language_resources')),
     path('api-auth/', include('rest_framework.urls')),
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger'),

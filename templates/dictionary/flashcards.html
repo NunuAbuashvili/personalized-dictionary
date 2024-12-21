@@ -1,0 +1,72 @@
+{% extends 'accounts/profile-base.html' %}
+{% load static %}
+{% block title %}Flashcards{% endblock %}
+
+{% block page_content %}
+<div class="flashcard-container">
+    <!-- Flashcard Display -->
+    <div id="flashcard" class="flashcard" onclick="toggleFlashcard()">
+        <div class="flashcard-front">
+            {% if front_type == 'meaning' %}
+                <p id="flashcard-front-content" class="flashcard-content-back">{{ flashcards.0.front }}</p>
+            {% else %}
+                <p id="flashcard-front-content" class="flashcard-content">{{ flashcards.0.front }}</p>
+            {% endif %}
+        </div>
+        <div class="flashcard-back">
+            {% if front_type == 'meaning' %}
+                <p id="flashcard-back-content" class="flashcard-content">{{ flashcards.0.back }}</p>
+            {% else %}
+                <p id="flashcard-back-content" class="flashcard-content-back">{{ flashcards.0.back }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="navigation-buttons">
+        <button class="nav-button" onclick="previousCard()">Previous</button>
+        <button class="nav-button" onclick="nextCard()">Next</button>
+    </div>
+</div>
+
+<script>
+    // Flashcards data from the server
+    const flashcards = {{ flashcards|safe }};
+    let currentIndex = 0;
+
+    // Toggle flashcard between front and back
+    function toggleFlashcard() {
+        const flashcard = document.getElementById('flashcard');
+        flashcard.classList.toggle('flipped');
+    }
+
+    // Show the previous flashcard
+    function previousCard() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            updateFlashcard();
+        }
+    }
+
+    // Show the next flashcard
+    function nextCard() {
+        if (currentIndex < flashcards.length - 1) {
+            currentIndex++;
+            updateFlashcard();
+        }
+    }
+
+    // Update flashcard content
+    function updateFlashcard() {
+        const frontContent = document.getElementById('flashcard-front-content');
+        const backContent = document.getElementById('flashcard-back-content');
+
+        frontContent.textContent = flashcards[currentIndex].front;
+        backContent.textContent = flashcards[currentIndex].back;
+
+        // Reset flip state
+        const flashcard = document.getElementById('flashcard');
+        flashcard.classList.remove('flipped');
+    }
+</script>
+{% endblock %}

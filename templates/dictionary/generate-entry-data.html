@@ -62,7 +62,7 @@
         <!-- Action Buttons -->
         <div class="form-actions">
             <button type="submit" class="update-button">Save Entry</button>
-            <a href="{% url 'dictionaries:entry-create' user_slug=user_slug folder_slug=folder_slug dictionary_slug=dictionary_slug %}"
+            <a href="{% url 'initiate-entry' user_slug=user_slug folder_slug=folder_slug dictionary_slug=dictionary_slug %}"
                class="cancel-button">Back</a>
         </div>
     </form>

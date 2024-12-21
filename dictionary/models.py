@@ -1,3 +1,5 @@
+import pycountry
+
 from django.db import models
 from django.db.models import UniqueConstraint, Count
 from django.urls import reverse
@@ -12,6 +14,10 @@ class Language(models.Model):
         ('English', _('English')),
         ('Georgian', _('Georgian')),
         ('Korean', _('Korean')),
+        ('French', _('French')),
+        ('Spanish', _('Spanish')),
+        ('German', _('German')),
+        ('Mandarin', _('Chinese Simplified')),
     ]
     name = models.CharField(choices=LANGUAGE_CHOICES, max_length=15)
     slug = models.SlugField(_('slug'), unique=True)
@@ -31,7 +37,7 @@ class Language(models.Model):
 
 class DictionaryFolder(models.Model):
     name = models.CharField(_('dictionary folder name'), max_length=255)
-    slug = models.SlugField(_('slug'), unique=True, allow_unicode=True)
+    slug = models.SlugField(_('slug'), allow_unicode=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='folders')
     language = models.ForeignKey(Language, on_delete=models.CASCADE, related_name='folders')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -43,13 +49,14 @@ class DictionaryFolder(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f'{self.name} ({self.language.name})'
+        return self.name
 
     class Meta:
         verbose_name = _('Dictionary Folder')
         verbose_name_plural = _('Dictionary Folders')
         constraints = [
-            UniqueConstraint(fields=('user', 'name'), name='unique_folder_per_user')
+            UniqueConstraint(fields=('user', 'name'), name='unique_folder_per_user'),
+            UniqueConstraint(fields=('user', 'slug'), name='unique_slug_per_user'),
         ]
 
     def get_absolute_url(self):
@@ -68,7 +75,7 @@ class DictionaryFolder(models.Model):
 
 class Dictionary(models.Model):
     name = models.CharField(_('dictionary name'), max_length=255)
-    slug = models.SlugField(_('slug'), unique=True, allow_unicode=True)
+    slug = models.SlugField(_('slug'), allow_unicode=True)
     description = models.TextField(_('dictionary description'), blank=True, null=True)
     folder = models.ForeignKey(DictionaryFolder, on_delete=models.CASCADE, related_name='dictionaries')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -86,7 +93,8 @@ class Dictionary(models.Model):
         verbose_name = _('Dictionary')
         verbose_name_plural = _('Dictionaries')
         constraints = [
-            UniqueConstraint(fields=('folder', 'name'), name='unique_dictionary_per_folder')
+            UniqueConstraint(fields=('folder', 'name'), name='unique_dictionary_per_folder'),
+            UniqueConstraint(fields=('folder', 'slug'), name='unique_slug_per_folder'),
         ]
 
     def get_absolute_url(self):
@@ -97,30 +105,19 @@ class Dictionary(models.Model):
         })
 
 
-class Example(models.Model):
-    sentence = models.TextField(_('example sentence'))
-    source = models.CharField(_('source'), max_length=120, null=True, blank=True)
-
-    def __str__(self):
-        return self.sentence
-
-    class Meta:
-        verbose_name = _('Example')
-        verbose_name_plural = _('Examples')
-
-
 class DictionaryEntry(models.Model):
     dictionary = models.ForeignKey(Dictionary, on_delete=models.CASCADE, related_name='entries')
     word = models.CharField(_('dictionary entry'), max_length=255)
-    slug = models.SlugField(_('slug'), unique=True, allow_unicode=True)
-    examples = models.ManyToManyField(Example, related_name='entries')
+    slug = models.SlugField(_('slug'), allow_unicode=True)
     notes = models.TextField(_('entry notes'), blank=True, null=True)
+    image = models.ImageField(upload_to='entry_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.word)
+            self.slug = slugify(self.word, allow_unicode=True)
+        self.word = self.word.capitalize()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -130,7 +127,8 @@ class DictionaryEntry(models.Model):
         verbose_name = _('Dictionary Entry')
         verbose_name_plural = _('Dictionary Entries')
         constraints = [
-            UniqueConstraint(fields=('dictionary', 'word'), name='unique_entry_per_dictionary')
+            UniqueConstraint(fields=('dictionary', 'word'), name='unique_entry_per_dictionary'),
+            UniqueConstraint(fields=('dictionary', 'slug'), name='unique_slug_per_dictionary'),
         ]
 
     def get_absolute_url(self):
@@ -140,6 +138,19 @@ class DictionaryEntry(models.Model):
             'dictionary_slug': self.dictionary.slug,
             'entry_slug': self.slug,
         })
+
+
+class Example(models.Model):
+    sentence = models.TextField(_('example sentence'))
+    source = models.CharField(_('source'), max_length=120, null=True, blank=True)
+    entry = models.ForeignKey(DictionaryEntry, on_delete=models.CASCADE, related_name='examples')
+
+    def __str__(self):
+        return self.sentence
+
+    class Meta:
+        verbose_name = _('Example')
+        verbose_name_plural = _('Examples')
 
 
 class Meaning(models.Model):

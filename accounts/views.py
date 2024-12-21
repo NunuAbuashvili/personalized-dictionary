@@ -4,6 +4,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView
+from django.core.exceptions import PermissionDenied
 from django.core.mail import EmailMultiAlternatives
 from django.http import HttpRequest, HttpResponse, Http404
 from django.shortcuts import render, redirect
@@ -199,9 +200,9 @@ def update_profile(request, user_slug):
 @verified_email_required
 def view_user_profile(request, user_slug):
     try:
-        user = CustomUser.annotate_all_statistics(
+        page_user = CustomUser.annotate_all_statistics(
             CustomUser.objects.filter(slug=user_slug)
-        ).get(slug=user_slug)
+        ).select_related('profile').get(slug=user_slug)
     except CustomUser.DoesNotExist:
         raise Http404(_('User does not exist'))
 
@@ -210,16 +211,16 @@ def view_user_profile(request, user_slug):
         return redirect('accounts:login')
 
     try:
-        profile = user.profile
+        profile = page_user.profile
     except Profile.DoesNotExist:
         profile = None
 
     folder_languages = Language.objects.filter(
-            folders__user = user
+            folders__user = page_user
         ).distinct()
 
     context = {
-        'user': user,
+        'page_user': page_user,
         'profile': profile,
         'folder_languages': folder_languages,
     }

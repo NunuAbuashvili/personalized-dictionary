@@ -36,12 +36,5 @@ class MeaningAdmin(admin.ModelAdmin):
 
 @admin.register(Example)
 class ExampleAdmin(admin.ModelAdmin):
-    list_display = ('sentence', 'show_entries')
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).prefetch_related('entries')
-
-    def show_entries(self, instance):
-        return ', '.join([entry.word for entry in instance.entries.all()])
-
-    show_entries.short_description = _('Dictionary Entries')
+    list_display = ('sentence', 'entry__word')
+    list_filter = ('source',)

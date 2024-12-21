@@ -14,208 +14,226 @@
 {% endblock %}
 
 {% block page_content %}
-    <div class="add-entry-container">
-        <h1 class="add-entry-title">Add New Entry</h1>
+<div class="add-entry-container">
+    <h1 class="add-entry-title">Add New Entry</h1>
 
-        <!-- Entry Form -->
-        <form method="post" action="">
-            {% csrf_token %}
-            <!-- Entry Word -->
-            <div class="form-group">
-                <label>Dictionary Entry</label>
-                <input type="text" id="entry" name="entry" class="form-control" value="{{ word }}" readonly>
-            </div>
+    <!-- Entry Form -->
+    <form method="post"
+          action="{% url 'dictionaries:create-entry' user_slug=user_slug folder_slug=folder_slug dictionary_slug=dictionary_slug %}"
+          enctype="multipart/form-data">
+        {% csrf_token %}
 
-            <div class="generated-section">
-                <h3>Definitions & Translations</h3>
-                <div id="generated-translations" class="generated-translations">
-                    <p class="definiton"><strong>Definition: </strong>{{ definition }}</p>
-                    <input type="hidden" name="definition" value="{{ definition }}">
-                    {% for translation in translations %}
-                        <p class="generated-translation"><strong>{{ translation.language }}: </strong>{{ translation.translation}}</p>
-                        <input type="hidden" name="translation_languages[]" value="{{ translation.language }}">
-                        <input type="hidden" name="translations[]" value="{{ translation.translation }}">
-                    {% endfor %}
-                </div>
-            </div>
+        <!-- Entry Word -->
+        <div class="form-group">
+            <label>Dictionary Entry</label>
+            <input type="text" id="entry" name="entry" class="form-control" value="{{ word }}" readonly>
+        </div>
 
-            <!-- Meanings Section -->
-            <div class="meanings-section">
-                <label>Meanings</label>
-                <div id="meanings-container">
-                    <div class="meaning-row">
-                        <input type="text" name="meaning_description[]" class="meaning-input"
-                               placeholder="Enter meaning">
-                        <select name="meaning_language[]" class="language-select">
-                            {% for language in languages %}
-                                <option value="{{ language }}">{{ language }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="button" class="btn-delete delete-meaning">&times;</button>
-                    </div>
-                </div>
-                <button type="button" id="add-meaning-button" class="btn-add">+ Add Meaning</button>
-            </div>
-
-            <!-- Example Sentences Section -->
-            <div class="examples-section">
-                <h3>Example Sentences</h3>
-                <button type="button" id="generate-examples" class="btn-generate">Generate Examples</button>
-
-                <div class="examples-container">
-                    <div class="box" id="generated-examples">
-                        <h4>Generated Examples</h4>
-                        <ul id="generated-list" class="example-list">
-                            {% for example in examples %}
-                                <li draggable="true" class="example-item">{{ example.sentence }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <div class="box" id="chosen-examples">
-                        <h4>Chosen Examples</h4>
-                        <ul id="chosen-list" class="example-list"></ul>
-                    </div>
-                </div>
-
-                <!-- Add Custom Example -->
-                <div class="add-custom-example">
-                    <label for="custom-example">Add your own example</label>
-                    <input type="text" id="custom-example" class="form-control"
-                           placeholder="Write your example sentence">
-                    <button type="button" id="add-custom-button" class="btn-add">Add Example</button>
-                </div>
-                <input type="hidden" name="example_sentences[]" id="example-sentences-input">
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="form-actions">
-                <button type="submit" class="update-button">Save</button>
-                <a href="{% url 'dictionaries:dictionary-detail' user_slug=user_slug folder_slug=folder_slug dictionary_slug=dictionary_slug %}"
-                   class="cancel-button">Cancel</a>
-            </div>
-        </form>
-    </div>
-
-    <!-- JavaScript -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const meaningsContainer = document.getElementById("meanings-container");
-            const addMeaningButton = document.getElementById("add-meaning-button");
-
-            // Function to make an element draggable
-            function makeDraggable(element) {
-                element.setAttribute('draggable', 'true');
-                element.addEventListener('dragstart', (e) => {
-                    let selected = e.target;
-                    const generatedExamplesBox = document.getElementById("generated-examples");
-                    const chosenExamplesBox = document.getElementById("chosen-examples");
-
-                    // Drag over prevention
-                    generatedExamplesBox.addEventListener("dragover", function (e) {
-                        e.preventDefault();
-                    });
-
-                    // Drop event for moving back to generated examples
-                    generatedExamplesBox.addEventListener("drop", function (e) {
-                        generatedExamplesBox.appendChild(selected);
-                        // Remove final-example-item class when dragged back
-                        selected.classList.remove("final-example-item");
-                        selected = null;
-                    });
-
-                    chosenExamplesBox.addEventListener("dragover", function (e) {
-                        e.preventDefault();
-                    });
-
-                    chosenExamplesBox.addEventListener("drop", function (e) {
-                        chosenExamplesBox.appendChild(selected);
-                        selected.classList.add("final-example-item");
-                        selected = null;
-                    });
-
-                    e.dataTransfer.setData('text/plain', e.target.textContent);
-                });
-            }
-
-            // Function to create a new meaning row
-            function createMeaningRow() {
-                const meaningRow = document.createElement("div");
-                meaningRow.classList.add("meaning-row");
-                meaningRow.innerHTML = `
-            <input type="text" name="meaning_description[]" class="meaning-input" placeholder="Enter meaning">
-            <select name="meaning_language[]" class="language-select">
-                {% for language in languages %}
-                    <option value="{{ language }}">{{ language }}</option>
+        <div class="generated-section">
+            <h3>Definitions & Translations</h3>
+            <div id="generated-translations" class="generated-translations">
+                <p class="definiton"><strong>Definition: </strong>{{ definition }}</p>
+                <input type="hidden" name="definition" value="{{ definition }}">
+                {% for translation in translations %}
+                    <p class="generated-translation"><strong>{{ translation.language }}: </strong>{{ translation.translation}}</p>
+                    <input type="hidden" name="translation_languages[]" value="{{ translation.language }}">
+                    <input type="hidden" name="translations[]" value="{{ translation.translation }}">
                 {% endfor %}
-            </select>
-            <button type="button" class="btn-delete delete-meaning">&times;</button>
-        `;
-                meaningsContainer.appendChild(meaningRow);
-                addDeleteListener(meaningRow.querySelector('.delete-meaning'), meaningRow);
-            }
+            </div>
+        </div>
 
-            // Add delete button functionality
-            function addDeleteListener(button, parentElement) {
-                button.addEventListener("click", function () {
-                    parentElement.remove();
+        <!-- Meanings Section -->
+        <div class="meanings-section">
+            <label>Meanings</label>
+            <div id="meanings-container">
+                <div class="meaning-row">
+                    <input type="text" name="meaning_description[]" class="meaning-input"
+                           placeholder="Enter meaning">
+                    <select name="meaning_language[]" class="language-select">
+                        {% for language in languages %}
+                            <option value="{{ language }}">{{ language }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn-delete delete-meaning">&times;</button>
+                </div>
+            </div>
+            <button type="button" id="add-meaning-button" class="btn-add">+ Add Meaning</button>
+        </div>
+
+        <!-- Example Sentences Section -->
+        <div class="examples-section">
+            <h3>Example Sentences</h3>
+            <button type="button" id="generate-examples" class="btn-generate">Generate Examples</button>
+
+            <div class="examples-container">
+                <div class="box" id="generated-examples">
+                    <h4>Generated Examples</h4>
+                    <ul id="generated-list" class="example-list">
+                        {% for example in examples %}
+                            <li draggable="true" class="example-item">{{ example.sentence }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="box" id="chosen-examples">
+                    <h4>Chosen Examples</h4>
+                    <ul id="chosen-list" class="example-list"></ul>
+                </div>
+            </div>
+
+            <!-- Add Custom Example -->
+            <div class="add-custom-example">
+                <label for="custom-example">Add your own example</label>
+                <input type="text" id="custom-example" class="form-control"
+                       placeholder="Write your example sentence">
+                <button type="button" id="add-custom-button" class="btn-add">Add Example</button>
+            </div>
+            <input type="hidden" name="example_sentences[]" id="example-sentences-input">
+        </div>
+
+        <div class="form-group notes-container">
+            <label>Notes</label>
+            {{ form.notes }}
+        </div>
+
+        <div class="form-group">
+            <label>Upload an image related to this dictionary entry.</label>
+            {{ form.image }}
+            {% if form.image.errors %}
+                <div class="alert alert-danger">
+                    {{ form.image.errors }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <button type="submit" class="update-button">Save</button>
+            <a href="{% url 'dictionaries:dictionary-detail' user_slug=user_slug folder_slug=folder_slug dictionary_slug=dictionary_slug %}"
+               class="cancel-button">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const meaningsContainer = document.getElementById("meanings-container");
+        const addMeaningButton = document.getElementById("add-meaning-button");
+
+        // Function to make an element draggable
+        function makeDraggable(element) {
+            element.setAttribute('draggable', 'true');
+            element.addEventListener('dragstart', (e) => {
+                let selected = e.target;
+                const generatedExamplesBox = document.getElementById("generated-examples");
+                const chosenExamplesBox = document.getElementById("chosen-examples");
+
+                // Drag over prevention
+                generatedExamplesBox.addEventListener("dragover", function (e) {
+                    e.preventDefault();
                 });
-            }
 
-            // Add functionality to "Add Meaning" button
-            addMeaningButton.addEventListener("click", createMeaningRow);
+                // Drop event for moving back to generated examples
+                generatedExamplesBox.addEventListener("drop", function (e) {
+                    generatedExamplesBox.appendChild(selected);
+                    // Remove final-example-item class when dragged back
+                    selected.classList.remove("final-example-item");
+                    selected = null;
+                });
 
-            // Add delete listeners to initial rows
-            document.querySelectorAll(".delete-meaning").forEach(btn => {
-                addDeleteListener(btn, btn.parentElement);
+                chosenExamplesBox.addEventListener("dragover", function (e) {
+                    e.preventDefault();
+                });
+
+                chosenExamplesBox.addEventListener("drop", function (e) {
+                    chosenExamplesBox.appendChild(selected);
+                    selected.classList.add("final-example-item");
+                    selected = null;
+                });
+
+                e.dataTransfer.setData('text/plain', e.target.textContent);
             });
+        }
 
-            // DOM Elements for drag-and-drop and custom examples
-            const generatedExamples = document.getElementsByClassName("example-item");
-            const generatedExamplesBox = document.getElementById("generated-examples");
-            const chosenExamplesBox = document.getElementById("chosen-examples");
+        // Function to create a new meaning row
+        function createMeaningRow() {
+            const meaningRow = document.createElement("div");
+            meaningRow.classList.add("meaning-row");
+            meaningRow.innerHTML = `
+        <input type="text" name="meaning_description[]" class="meaning-input" placeholder="Enter meaning">
+        <select name="meaning_language[]" class="language-select">
+            {% for language in languages %}
+                <option value="{{ language }}">{{ language }}</option>
+            {% endfor %}
+        </select>
+        <button type="button" class="btn-delete delete-meaning">&times;</button>
+    `;
+            meaningsContainer.appendChild(meaningRow);
+            addDeleteListener(meaningRow.querySelector('.delete-meaning'), meaningRow);
+        }
 
-            // Add drag functionality to initial generated examples
-            for (let list of generatedExamples) {
-                makeDraggable(list);
-            }
-
-            const addCustomButton = document.getElementById("add-custom-button");
-            const customExampleInput = document.getElementById("custom-example");
-            const exampleSentencesInput = document.getElementById("example-sentences-input");
-            const form = document.querySelector("form");
-
-            // Add Custom Example functionality
-            addCustomButton.addEventListener("click", function () {
-                if (customExampleInput.value) {
-                    const newLi = document.createElement("li");
-                    newLi.classList.add("example-item");
-                    newLi.classList.add("final-example-item");
-                    newLi.classList.add("custom-example");
-                    newLi.textContent = customExampleInput.value.trim();
-
-                    // Add click event to remove custom examples
-                    newLi.addEventListener('click', function () {
-                        // If it's a custom example, simply remove it when clicked
-                        this.remove();
-                    });
-
-                    // Make the custom example draggable
-                    makeDraggable(newLi);
-
-                    chosenExamplesBox.appendChild(newLi);
-                    customExampleInput.value = "";
-                }
+        // Add delete button functionality
+        function addDeleteListener(button, parentElement) {
+            button.addEventListener("click", function () {
+                parentElement.remove();
             });
+        }
 
-            // Form submission: Serialize chosen sentences to a hidden input
-            form.addEventListener("submit", function (e) {
-                const chosenExamples = chosenExamplesBox.querySelectorAll(".final-example-item");
-                const sentences = Array.from(chosenExamples).map(item => ({
-                    sentence: item.textContent.trim(),
-                    isCustom: item.classList.contains('custom-example')
-                }));
-                exampleSentencesInput.value = JSON.stringify(sentences);
-            });
+        // Add functionality to "Add Meaning" button
+        addMeaningButton.addEventListener("click", createMeaningRow);
+
+        // Add delete listeners to initial rows
+        document.querySelectorAll(".delete-meaning").forEach(btn => {
+            addDeleteListener(btn, btn.parentElement);
         });
-    </script>
+
+        // DOM Elements for drag-and-drop and custom examples
+        const generatedExamples = document.getElementsByClassName("example-item");
+        const generatedExamplesBox = document.getElementById("generated-examples");
+        const chosenExamplesBox = document.getElementById("chosen-examples");
+
+        // Add drag functionality to initial generated examples
+        for (let list of generatedExamples) {
+            makeDraggable(list);
+        }
+
+        const addCustomButton = document.getElementById("add-custom-button");
+        const customExampleInput = document.getElementById("custom-example");
+        const exampleSentencesInput = document.getElementById("example-sentences-input");
+        const form = document.querySelector("form");
+
+        // Add Custom Example functionality
+        addCustomButton.addEventListener("click", function () {
+            if (customExampleInput.value) {
+                const newLi = document.createElement("li");
+                newLi.classList.add("example-item");
+                newLi.classList.add("final-example-item");
+                newLi.classList.add("custom-example");
+                newLi.textContent = customExampleInput.value.trim();
+
+                // Add click event to remove custom examples
+                newLi.addEventListener('click', function () {
+                    // If it's a custom example, simply remove it when clicked
+                    this.remove();
+                });
+
+                // Make the custom example draggable
+                makeDraggable(newLi);
+
+                chosenExamplesBox.appendChild(newLi);
+                customExampleInput.value = "";
+            }
+        });
+
+        // Form submission: Serialize chosen sentences to a hidden input
+        form.addEventListener("submit", function (e) {
+            const chosenExamples = chosenExamplesBox.querySelectorAll(".final-example-item");
+            const sentences = Array.from(chosenExamples).map(item => ({
+                sentence: item.textContent.trim(),
+                isCustom: item.classList.contains('custom-example')
+            }));
+            exampleSentencesInput.value = JSON.stringify(sentences);
+        });
+    });
+</script>
 {% endblock %}

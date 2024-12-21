@@ -1,0 +1,106 @@
+{% extends 'accounts/profile-base.html' %}
+{% load static %}
+{% block title %}Leaderboard{% endblock %}
+
+{% block page_content %}
+<div class="leaderboard-container">
+    <img src="{% static 'img/home-logo.png' %}" alt="Personal Dictionary Logo" class="dictionary-logo">
+    <h2 class="leaderboard-title">Leaderboard of the week</h2>
+
+    <div class="leaderboard-section">
+        <h3>Top Users Who Added the Most Entries This Week</h3>
+        <ul>
+            {% for user_stat in leaderboard.weekly_entries %}
+                <a href="{% url 'accounts:view_profile' user_slug=user_stat.user.slug %}" class="leaderboard-link">
+                    <div class="leaderboard-user-container">
+                        <img src="{{ user_stat.user.profile.image.url }}"
+                             alt="User Profile Image" class="leaderboard-profile-image">
+                        <li>
+                            <strong>{{ user_stat.user.username }}</strong>: {{ user_stat.weekly_entries }} entries
+                        </li>
+                    </div>
+                </a>
+            {% empty %}
+                <li>No data available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="leaderboard-section">
+        <h3>Top Users Who Added the Most Example Sentences This Week</h3>
+        <ul>
+            {% for user_stat in leaderboard.weekly_examples %}
+                <a href="{% url 'accounts:view_profile' user_slug=user_stat.user.slug %}" class="leaderboard-link">
+                    <div class="leaderboard-user-container">
+                        <img src="{{ user_stat.user.profile.image.url }}"
+                             alt="User Profile Image" class="leaderboard-profile-image">
+                        <li>
+                            <strong>{{ user_stat.user.username }}</strong>: {{ user_stat.weekly_examples }} examples
+                        </li>
+                    </div>
+                </a>
+            {% empty %}
+                <li>No data available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <h2 class="leaderboard-title">Overall Leaderboard</h2>
+    <div class="leaderboard-section">
+        <h3>Top Users with the Highest Number of Entries</h3>
+        <ul>
+            {% for user_stat in leaderboard.most_entries %}
+                <a href="{% url 'accounts:view_profile' user_slug=user_stat.user.slug %}" class="leaderboard-link">
+                    <div class="leaderboard-user-container">
+                        <img src="{{ user_stat.user.profile.image.url }}"
+                             alt="User Profile Image" class="leaderboard-profile-image">
+                        <li>
+                            <strong>{{ user_stat.user.username }}</strong>: {{ user_stat.total_entries }} entries
+                        </li>
+                    </div>
+                </a>
+            {% empty %}
+                <li>No data available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="leaderboard-section">
+        <h3>Top Users Who Added the Most Example Sentences</h3>
+        <ul>
+            {% for user_stat in leaderboard.most_examples %}
+                <a href="{% url 'accounts:view_profile' user_slug=user_stat.user.slug %}" class="leaderboard-link">
+                    <div class="leaderboard-user-container">
+                        <img src="{{ user_stat.user.profile.image.url }}"
+                             alt="User Profile Image" class="leaderboard-profile-image">
+                        <li>
+                            <strong>{{ user_stat.user.username }}</strong>: {{ user_stat.total_examples }} examples
+                        </li>
+                    </div>
+                </a>
+            {% empty %}
+                <li>No data available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="leaderboard-section">
+        <h3>Top Users with the Longest Ongoing Streak</h3>
+        <ul>
+            {% for user_stat in leaderboard.top_streaks %}
+                <a href="{% url 'accounts:view_profile' user_slug=user_stat.user.slug %}" class="leaderboard-link">
+                    <div class="leaderboard-user-container">
+                        <img src="{{ user_stat.user.profile.image.url }}"
+                             alt="User Profile Image" class="leaderboard-profile-image">
+                        <li>
+                            <strong>{{ user_stat.user.username }}</strong>: {{ user_stat.max_streak }} days
+                        </li>
+                    </div>
+                </a>
+            {% empty %}
+                <li>No data available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

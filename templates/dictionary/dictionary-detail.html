@@ -14,14 +14,31 @@
             <p class="entry-language">No description.</p>
         {% endif %}
 
-        {% if perms.dictionaries.change_dictionary %}
+        {% if dictionary.folder.user == user %}
             <div class="dictionary-actions">
                 <a href="{% url 'dictionaries:dictionary-update' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button">Update</a>
                 <a href="{% url 'dictionaries:dictionary-delete' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button">Delete</a>
-                <a href="{% url 'dictionaries:entry-create' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button add-entry-button">+</a>
+                <a href="{% url 'dictionaries:initiate-entry' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button add-entry-button">+</a>
             </div>
         {% endif %}
     </div>
+
+    <!-- Turn into Flashcards -->
+    {% if dictionary.folder.user == user %}
+        <div class="flashcard-section">
+            <p>
+                To convert this dictionary into flashcards, choose the front side of the card below and press "Generate Flashcards".
+            </p>
+            <form action="{% url 'dictionaries:dictionary-flashcards' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" method="post">
+                {% csrf_token %}
+                <select id="front_type" name="front_type">
+                    <option value="word">Word</option>
+                    <option value="meaning">Meaning</option>
+                </select>
+                <button type="submit" class="flashcard-button">Generate Flashcards</button>
+            </form>
+        </div>
+    {% endif %}
 
     <div class="dictionary-search-bar">
         <form method="get">
@@ -52,7 +69,7 @@
             </thead>
             <tbody>
                 {% for entry in object_list %}
-                <tr onclick="window.location.href='{% url 'dictionaries:entry-detail' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug entry_slug=entry.slug %}'">
+                <tr onclick="window.location.href='{% url 'dictionaries:entry-detail' user_slug=dictionary.folder.user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug entry_slug=entry.slug %}'">
                     <td class="entry">{{ entry.word }}</td>
                     <td>
                         {% for meaning in entry.meanings.all %}

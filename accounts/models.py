@@ -122,6 +122,7 @@ class UserProfile(models.Model):
     date_of_birth = models.DateField(_('date of birth'), blank=True, null=True)
     country = CountryField(verbose_name=_("country"), blank_label=_("Select country"))
     image = models.ImageField(upload_to='profile_images/', default='default.jpeg')
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f'{self.user.username} Profile'

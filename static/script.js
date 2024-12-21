@@ -52,23 +52,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function showAllDictionaries() {
-    console.log("Showing all dictionaries");
-}
-
 function filterFolders(language) {
-    const folders = document.querySelectorAll('.dictionary-folder');
-    const filterButtons = document.querySelectorAll('.filter-btn');
+    const folderLinks = document.querySelectorAll('.dictionary-folder-link');
 
-    // Reset active state on all buttons
-    filterButtons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    folderLinks.forEach(link => {
+        const folder = link.querySelector('.dictionary-folder');
+        const folderLanguage = folder.getAttribute('data-language');
 
-    folders.forEach(folder => {
-        if (language === 'All' || folder.dataset.language === language) {
-            folder.style.display = 'block';
+        if (language === 'All' || folderLanguage === language) {
+            link.classList.remove('hidden');
         } else {
-            folder.style.display = 'none';
+            link.classList.add('hidden');
         }
     });
 }
