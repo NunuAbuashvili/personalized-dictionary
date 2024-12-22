@@ -20,12 +20,11 @@
     <div class="entry-header">
         <h1 class="entry-title">{{ entry.word }}</h1>
         <p class="entry-language"><em>Language: {{ entry.dictionary.folder.language }}</em></p>
-    </div>
-
-    <div class="entry-image">
-        {% if entry.image %}
-            <img src="{{ entry.image.url }}" alt="An image related to the dictionary entry">
-        {% endif %}
+        <div class="entry-image">
+            {% if entry.image %}
+                <img src="{{ entry.image.url }}" alt="An image related to the dictionary entry">
+            {% endif %}
+        </div>
     </div>
 
     <!-- Meanings Section -->

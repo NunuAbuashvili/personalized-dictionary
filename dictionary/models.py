@@ -1,5 +1,3 @@
-import pycountry
-
 from django.db import models
 from django.db.models import UniqueConstraint, Count
 from django.urls import reverse
@@ -117,7 +115,7 @@ class DictionaryEntry(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.word, allow_unicode=True)
-        self.word = self.word.capitalize()
+        self.word = self.word.title()
         super().save(*args, **kwargs)
 
     def __str__(self):

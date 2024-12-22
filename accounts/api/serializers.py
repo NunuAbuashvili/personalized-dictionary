@@ -91,10 +91,47 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 
 class UserProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    email = serializers.EmailField(source='user.email', read_only=True, label=_('Email Address'))
-    first_name = serializers.CharField(source='user.first_name', read_only=True, label=_('First Name'))
-    last_name = serializers.CharField(source='user.last_name', read_only=True, label=_('Last Name'))
+    username = serializers.CharField(source='user.username')
+    email = serializers.EmailField(source='user.email', label=_('Email Address'), read_only=True)
+    first_name = serializers.CharField(source='user.first_name', label=_('First Name'))
+    last_name = serializers.CharField(source='user.last_name', label=_('Last Name'))
+    folder_count = serializers.IntegerField(read_only=True)
+    dictionary_count = serializers.IntegerField(read_only=True)
+    entry_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ('id', 'email', 'first_name', 'last_name', 'country', 'date_of_birth', 'image')
+        fields = (
+            'id', 'email', 'username', 'first_name',
+            'last_name', 'country', 'date_of_birth', 'image',
+            'folder_count', 'dictionary_count', 'entry_count'
+        )
+
+    def update(self, instance, validated_data):
+        """
+        Update a UserProfile instance and its associated User.
+        """
+        user_data = validated_data.pop('user', {})
+
+        # Update User instance
+        user = instance.user
+        user.username = user_data.get('username', user.username)
+        user.first_name = user_data.get('first_name', user.first_name)
+        user.last_name = user_data.get('last_name', user.last_name)
+        user.save()
+
+        # Update UserProfile instance
+        instance.country = validated_data.get('country', instance.country)
+        instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
+        instance.save()
+
+        return instance
+
+    def validate_username(self, value):
+        """
+        Validate that the username is unique.
+        """
+        user = self.instance.user if self.instance else None
+        if CustomUser.objects.exclude(pk=user.pk if user else None).filter(username=value).exists():
+            raise serializers.ValidationError(_("A user with this username already exists."))
+        return value

@@ -76,7 +76,8 @@ class DictionaryFilter(django_filters.FilterSet):
         return queryset.filter(
             Q(name__icontains=value) |
             Q(description__icontains=value) |
-            Q(entries__word__icontains=value)
+            Q(entries__word__icontains=value) |
+            Q(entries__meanings__description__icontains=value)
         ).distinct()
 
 

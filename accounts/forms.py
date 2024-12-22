@@ -61,10 +61,22 @@ class CustomSetPasswordForm(SetPasswordForm):
 class UserUpdateForm(forms.ModelForm):
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name')
+        fields = ('username', 'first_name', 'last_name')
 
 
 class UserProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = ('country', 'date_of_birth', 'image')
+        widgets = {
+            'country': forms.Select(attrs={'class': 'form-control'}),
+            'date_of_birth': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        if self.instance and self.instance.id:
+            if User.objects.exclude(id=self.instance.user.id).filter(username=username).exists():
+                raise forms.ValidationError(_('A user with this username already exists.'))
+        return username

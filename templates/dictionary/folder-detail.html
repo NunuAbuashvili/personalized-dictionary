@@ -52,6 +52,15 @@
             <button type="submit" class="flashcard-button">Generate Flashcards</button>
         </form>
     </div>
+
+    <div class="flashcard-section">
+        <p>
+            Press the button below to download this folder as a PDF file.
+        </p>
+        <form action="{% url 'dictionaries:folder-pdf-download' user_slug=user.slug folder_slug=folder.slug %}" method="get">
+            <button type="submit" class="flashcard-button">Download PDF</button>
+        </form>
+    </div>
 {% endif %}
 
 <!-- Dictionary Folders Section -->

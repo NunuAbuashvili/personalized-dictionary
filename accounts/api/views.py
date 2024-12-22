@@ -2,18 +2,21 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.exceptions import Throttled
 from rest_framework.generics import CreateAPIView, GenericAPIView
+from rest_framework.mixins import (ListModelMixin, UpdateModelMixin,
+                                   DestroyModelMixin, RetrieveModelMixin)
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 
 from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.db.models import Count
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
@@ -215,7 +218,20 @@ class PasswordResetConfirmAPIView(APIView):
 
 
 @extend_schema(tags=['Accounts'])
-class UserProfileViewSet(ModelViewSet):
-    queryset = UserProfile.objects.select_related('user')
+class UserProfileViewSet(ListModelMixin,
+                        RetrieveModelMixin,
+                        UpdateModelMixin,
+                        DestroyModelMixin,
+                        GenericViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsUserProfileOrReadOnly)
+
+    def get_queryset(self):
+        queryset = UserProfile.objects.select_related(
+            'user'
+        ).annotate(
+            folder_count=Count('user__folders', distinct=True),
+            dictionary_count=Count('user__folders__dictionaries', distinct=True),
+            entry_count=Count('user__folders__dictionaries__entries', distinct=True),
+        ).order_by('-dictionary_count')
+        return queryset

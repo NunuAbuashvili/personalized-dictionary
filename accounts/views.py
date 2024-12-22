@@ -7,15 +7,17 @@ from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, 
 from django.core.exceptions import PermissionDenied
 from django.core.mail import EmailMultiAlternatives
 from django.http import HttpRequest, HttpResponse, Http404
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils.encoding import force_bytes
 from django.utils.html import strip_tags
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
+from django.views.generic import CreateView, UpdateView, DeleteView
 
 from dictionary.models import Language
+from leaderboard.models import UserStatistics
 from .decorators import verified_email_required
 from .forms import (CustomUserCreationForm,
                     CustomAuthenticationForm,
@@ -164,22 +166,25 @@ class CustomLoginView(LoginView):
 @login_required
 @verified_email_required
 def update_profile(request, user_slug):
+    user = CustomUser.objects.get(slug=user_slug)
+    profile = get_object_or_404(UserProfile, user=user)
+
     if request.method == 'POST':
-        user = CustomUser.objects.get(slug=user_slug)
         user_form = UserUpdateForm(request.POST, instance=user)
         profile_form = UserProfileUpdateForm(request.POST,
                                              request.FILES,
-                                             instance=user.profile)
+                                             instance=profile)
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
             messages.success(request, _('Your account has been updated.'))
             return redirect('accounts:view_profile', user_slug=user.slug)
+        else:
+            messages.error(request, _('Please correct the errors below.'))
 
     else:
-        user = CustomUser.objects.get(slug=user_slug)
         user_form = UserUpdateForm(instance=user)
-        profile_form = UserProfileUpdateForm(instance=user)
+        profile_form = UserProfileUpdateForm(instance=profile)
 
     folder_languages = Language.objects.filter(
             folders__user = user
@@ -218,11 +223,13 @@ def view_user_profile(request, user_slug):
     folder_languages = Language.objects.filter(
             folders__user = page_user
         ).distinct()
+    statistics = UserStatistics.objects.get(user=page_user)
 
     context = {
         'page_user': page_user,
         'profile': profile,
         'folder_languages': folder_languages,
+        'statistics': statistics,
     }
 
     return render(request, 'accounts/profile.html', context)

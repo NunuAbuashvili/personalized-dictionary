@@ -12,8 +12,7 @@ class LeaderboardView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = (
             UserStatistics.objects
-            .select_related('user')
-            .prefetch_related('user__profile')
+            .select_related('user', 'user__profile')
         )
         return queryset
 
@@ -21,18 +20,12 @@ class LeaderboardView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         queryset = self.get_queryset()
 
-        most_entries = sorted(queryset, key=lambda user: user.total_entries, reverse=True)[:5]
-        most_examples = sorted(queryset, key=lambda user: user.total_examples, reverse=True)[:5]
-        weekly_entries = sorted(queryset, key=lambda user: user.weekly_entries, reverse=True)[:5]
-        weekly_examples = sorted(queryset, key=lambda user: user.weekly_examples, reverse=True)[:5]
-        top_streaks = sorted(queryset, key=lambda user: user.max_streak, reverse=True)[:5]
-
         context['leaderboard'] = {
-            'most_entries': most_entries,
-            'most_examples': most_examples,
-            'weekly_entries': weekly_entries,
-            'weekly_examples': weekly_examples,
-            'top_streaks': top_streaks,
+            'most_entries': queryset.order_by('-total_entries', 'user__username')[:5],
+            'most_examples': queryset.order_by('-total_examples', 'user__username')[:5],
+            'weekly_entries': queryset.order_by('-weekly_entries', 'user__username')[:5],
+            'weekly_examples': queryset.order_by('-weekly_examples', 'user__username')[:5],
+            'top_streaks': queryset.order_by('-max_streak', 'user__username')[:5],
         }
 
         return context

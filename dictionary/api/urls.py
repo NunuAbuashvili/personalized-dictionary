@@ -17,7 +17,8 @@ dictionaries_router.register(r'entries', views.DictionaryEntryViewSet, basename=
 
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('', include(folders_router.urls)),
-    path('', include(dictionaries_router.urls)),
+    path('folders/', include(router.urls)),
+    path('folders/', include(folders_router.urls)),
+    path('folders/', include(dictionaries_router.urls)),
+    path('search/', views.HomeSearchAPIListView.as_view(), name='search'),
 ]

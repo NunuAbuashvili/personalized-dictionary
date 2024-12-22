@@ -30,6 +30,11 @@
         <li>Number of Dictionary Folders: {{ page_user.folder_count }}</li>
         <li>Number of Dictionaries: {{ page_user.dictionary_count }}</li>
         <li>Number of Total Entries: {{ page_user.entry_count }}</li>
+        <li>Number of Weekly Entries: {{ statistics.weekly_entries }}</li>
+        <li>Number of Total Examples Added: {{ statistics.total_examples }}</li>
+        <li>Number of Weekly Examples Added: {{ statistics.weekly_examples }}</li>
+        <li>Longest Ongoing Streak: {{ statistics.current_streak }} days</li>
+        <li>Highest Streak: {{ statistics.max_streak }} days </li>
     </ul>
     {% if page_user != user %}
         <div class="folder-actions">

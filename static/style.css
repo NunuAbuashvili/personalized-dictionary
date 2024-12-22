@@ -695,6 +695,7 @@ nav ul li a,
     justify-content: center;
     align-items: center;
     margin-bottom: 20px;
+    gap: 6px;
 }
 
 .entry-title {
@@ -841,12 +842,13 @@ nav ul li a,
 }
 
 .entry-image {
-    width: 70%;
-    margin: 5px auto;
+    margin-top: 10px;
 }
 
 .entry-image img {
-    width: 100%;
+    border-radius: 15px;
+    max-height: 300px;
+    width: auto;
 }
 
 .img-thumbnail {

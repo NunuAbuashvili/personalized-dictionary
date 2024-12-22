@@ -145,6 +145,7 @@ SPECTACULAR_SETTINGS = {
     'TAGS': [
         {'name': 'Accounts', 'description': 'Operations related to user account'},
         {'name': 'Dictionaries', 'description': 'Operations related to dictionary'},
+        {'name': 'Leaderboard', 'description': 'Operations related to leaderboard'}
     ]
 }
 

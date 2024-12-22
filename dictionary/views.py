@@ -1,4 +1,6 @@
 from openai import OpenAI
+from weasyprint import HTML
+
 from django import forms
 from django.conf import settings
 from django.contrib import messages
@@ -6,9 +8,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
-from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (ListView, DetailView,
                                   CreateView, UpdateView,
@@ -32,7 +35,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
 class SearchResultsView(LoginRequiredMixin, ListView):
     model = DictionaryEntry
-    template_name = 'leaderboard/search-results.html'
+    template_name = 'dictionary/search-results.html'
     context_object_name = 'entries'
     paginate_by = 10
 
@@ -480,6 +483,7 @@ def fetch_data_from_openai(entry_word, entry_language, target_languages):
     )
 
     content = completion.choices[0].message.content
+    print(content)
     if content.startswith('Incorrect'):
         return None
     if content.startswith("```json"):
@@ -558,16 +562,16 @@ class EntryInitiateView(CustomLoginRequiredMixin, CreateView):
         )
 
         word = form.cleaned_data['word']
-        entry_language = self.request.POST.get('entry_language', '').strip()
-        target_languages = [self.request.POST.get('translation_languages')]
+        entry_language = self.request.POST.get('entry_language', '').strip().lower()
+        target_languages = [language.lower() for language in self.request.POST.get('translation_languages')]
         target_languages = set(target_languages)
         target_languages.discard(entry_language)
 
         # Store data in session for further processing
         self.request.session['entry_creation_data'] = {
             'word': word,
-            'target_languages': ', '.join(target_languages),
-            'entry_language': entry_language,
+            'target_languages': ', '.join([language.title() for language in target_languages]),
+            'entry_language': entry_language.title(),
             'user_slug': user_slug,
             'folder_slug': folder_slug,
             'dictionary_slug': dictionary_slug,
@@ -948,3 +952,72 @@ def generate_dictionary_flashcards(request, user_slug, folder_slug, dictionary_s
 
         return render(request, 'dictionary/flashcards.html',
                       {'flashcards': flashcards, 'front_type': front_type})
+
+
+def download_dictionary_pdf(request, user_slug, folder_slug, dictionary_slug):
+    author = get_object_or_404(CustomUser, slug=user_slug)
+    dictionary = get_object_or_404(
+        Dictionary,
+        folder__user__slug=user_slug,
+        slug=dictionary_slug
+    )
+    entries = dictionary.entries.prefetch_related(
+        'meanings',
+        'examples'
+    ).order_by('word', 'created_at')
+
+    # Data to be passed to the template for rendering
+    data = {
+        'author': author,
+        'dictionary': dictionary,
+        'entries': entries
+    }
+
+    # Render the HTML content for the PDF using a template
+    html_content = render_to_string('dictionary/dictionary-pdf.html', data)
+
+    # Generate the PDF from the HTML
+    pdf = HTML(string=html_content).write_pdf()
+    filename = f'Dictionary {dictionary.name}.pdf'
+
+    # Return the PDF as a response
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+def download_folder_pdf(request, user_slug, folder_slug):
+    author = get_object_or_404(CustomUser, slug=user_slug)
+    folder = get_object_or_404(
+        DictionaryFolder,
+        user__slug=user_slug,
+        slug=folder_slug
+    )
+    entries = DictionaryEntry.objects.filter(
+        dictionary__folder=folder
+    ).prefetch_related(
+        'meanings',
+        'examples'
+    ).order_by(
+        'dictionary__name',
+        'word'
+    )
+
+    # Data to be passed to the template for rendering
+    data = {
+        'author': author,
+        'folder': folder,
+        'entries': entries
+    }
+
+    # Render the HTML content for the PDF using a template
+    html_content = render_to_string('dictionary/folder-pdf.html', data)
+
+    # Generate the PDF from the HTML
+    pdf = HTML(string=html_content).write_pdf()
+    filename = f'Folder {folder.name}.pdf'
+
+    # Return the PDF as a response
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
