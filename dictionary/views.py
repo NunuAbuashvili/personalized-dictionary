@@ -73,7 +73,9 @@ class FolderListView(ListView):
     def get_queryset(self):
         return DictionaryFolder.objects.filter(
             user=self.folder_author
-        ).select_related('user', 'language')
+        ).select_related(
+            'user', 'language'
+        ).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         queryset = self.get_queryset()
@@ -99,7 +101,7 @@ class FolderDetailView(DetailView):
                 'user__profile'
             )
             .prefetch_related('dictionaries__entries')
-        )
+        ).order_by('-created_at')
 
     def get_object(self, queryset=None):
         queryset = self.get_queryset()
@@ -229,7 +231,7 @@ class DictionaryListView(ListView):
     template_name = 'dictionary/dictionaries.html'
     context_object_name = 'dictionaries'
     ordering = ('-created_at',)
-    paginate_by = 4
+    paginate_by = 5
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
@@ -245,7 +247,7 @@ class DictionaryListView(ListView):
         ).select_related(
             'folder',
             'folder__language'
-        )
+        ).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         queryset = self.get_queryset()
@@ -288,7 +290,7 @@ class DictionaryDetailView(DetailView, MultipleObjectMixin):
             .filter(
                 folder__user__slug=user_slug,
                 folder__slug=folder_slug
-            )
+            ).order_by('-created_at')
         )
 
     def get_object(self, queryset=None):
@@ -993,7 +995,8 @@ def download_dictionary_pdf(request, user_slug, folder_slug, dictionary_slug):
     html_content = render_to_string('dictionary/dictionary-pdf.html', data)
 
     # Generate the PDF from the HTML
-    pdf = HTML(string=html_content).write_pdf()
+    base_url = request.build_absolute_uri('/')
+    pdf = HTML(string=html_content, base_url=base_url).write_pdf()
     filename = f'Dictionary {dictionary.name}.pdf'
 
     # Return the PDF as a response
@@ -1030,7 +1033,8 @@ def download_folder_pdf(request, user_slug, folder_slug):
     html_content = render_to_string('dictionary/folder-pdf.html', data)
 
     # Generate the PDF from the HTML
-    pdf = HTML(string=html_content).write_pdf()
+    base_url = request.build_absolute_uri('/')
+    pdf = HTML(string=html_content, base_url=base_url).write_pdf()
     filename = f'Folder {folder.name}.pdf'
 
     # Return the PDF as a response

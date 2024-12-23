@@ -163,6 +163,75 @@
 .leaderboard-section:nth-child(3) { animation-delay: 0.3s; }
 .leaderboard-section:nth-child(4) { animation-delay: 0.4s; }
 
+
+/* Custom Error Pages */
+/* 404 Page */
+.error-container {
+    min-height: 80vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+}
+
+.error-content {
+    max-width: 600px;
+}
+
+.error-code {
+    font-size: 8rem;
+    margin: 0;
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.error-title {
+    font-size: 2rem;
+    color: #34495e;
+    margin: 1rem 0;
+}
+
+.error-message {
+    font-size: 1.1rem;
+    color: #7f8c8d;
+    margin-bottom: 2rem;
+}
+
+.error-button {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    background-color: #FF8A8A;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.error-button:hover {
+    background-color: #FF6B6B;
+    color: white;
+}
+
+/* Optional animation for the error code */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.error-code {
+    animation: fadeInDown 0.6s ease-out;
+}
+
+
+
+
 /* Flashcards Page */
 .flashcard-container {
     perspective: 1000px;

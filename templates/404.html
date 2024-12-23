@@ -1,0 +1,14 @@
+{% extends 'accounts/profile-base.html' %}
+{% load static %}
+{% block title %}Page Not Found{% endblock %}
+
+{% block page_content %}
+<div class="error-container">
+    <div class="error-content">
+        <h1 class="error-code">404</h1>
+        <h2 class="error-title">Page Not Found</h2>
+        <p class="error-message">The page you're looking for seems to have wandered off into another dictionary.</p>
+        <a href="{% url 'dictionaries:home' %}" class="error-button">Return Home</a>
+    </div>
+</div>
+{% endblock %}

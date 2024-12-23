@@ -32,10 +32,11 @@
         <div class="generated-section">
             <h3>Definitions & Translations</h3>
             <div id="generated-translations" class="generated-translations">
-                <p class="definiton"><strong>Definition: </strong>{{ definition }}</p>
-                <input type="hidden" name="definition" value="{{ definition }}">
+                <p class="definition" contenteditable="true"><strong>Definition: </strong>{{ definition }}</p>
+                <input type="hidden"  name="definition" value="{{ definition }}">
                 {% for translation in translations %}
-                    <p class="generated-translation"><strong>{{ translation.language }}: </strong>{{ translation.translation}}</p>
+                    <p class="generated-translation" contenteditable="true">
+                        <strong>{{ translation.language }}: </strong>{{ translation.translation}}</p>
                     <input type="hidden" name="translation_languages[]" value="{{ translation.language }}">
                     <input type="hidden" name="translations[]" value="{{ translation.translation }}">
                 {% endfor %}
@@ -160,14 +161,14 @@
             const meaningRow = document.createElement("div");
             meaningRow.classList.add("meaning-row");
             meaningRow.innerHTML = `
-        <input type="text" name="meaning_description[]" class="meaning-input" placeholder="Enter meaning">
-        <select name="meaning_language[]" class="language-select">
-            {% for language in languages %}
-                <option value="{{ language }}">{{ language }}</option>
-            {% endfor %}
-        </select>
-        <button type="button" class="btn-delete delete-meaning">&times;</button>
-    `;
+                <input type="text" name="meaning_description[]" class="meaning-input" placeholder="Enter meaning">
+                <select name="meaning_language[]" class="language-select">
+                    {% for language in languages %}
+                        <option value="{{ language }}">{{ language }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn-delete delete-meaning">&times;</button>
+            `;
             meaningsContainer.appendChild(meaningRow);
             addDeleteListener(meaningRow.querySelector('.delete-meaning'), meaningRow);
         }
@@ -227,6 +228,38 @@
 
         // Form submission: Serialize chosen sentences to a hidden input
         form.addEventListener("submit", function (e) {
+            // Update definition
+            const definitionElem = document.querySelector('.definition');
+            if (definitionElem) {
+                const definitionText = definitionElem.textContent;
+                const definitionInput = document.querySelector('input[name="definition"]');
+                if (definitionInput) {
+                    definitionInput.value = definitionText.replace('Definition: ', '').trim();
+                }
+            }
+
+            // Update translations
+            const translations = document.querySelectorAll('.generated-translation');
+            translations.forEach((elem, index) => {
+                const text = elem.textContent;
+                const parts = text.split(':');
+                if (parts.length >= 2) {
+                    const language = parts[0].trim();
+                    const translation = parts.slice(1).join(':').trim(); // Handle cases where translation might contain colons
+
+                    const languageInputs = document.querySelectorAll('input[name="translation_languages[]"]');
+                    const translationInputs = document.querySelectorAll('input[name="translations[]"]');
+
+                    if (languageInputs[index]) {
+                        languageInputs[index].value = language;
+                    }
+                    if (translationInputs[index]) {
+                        translationInputs[index].value = translation;
+                    }
+                }
+            });
+
+            // Handle example sentences
             const chosenExamples = chosenExamplesBox.querySelectorAll(".final-example-item");
             const sentences = Array.from(chosenExamples).map(item => ({
                 sentence: item.textContent.trim(),

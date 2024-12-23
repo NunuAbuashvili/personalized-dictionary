@@ -1,0 +1,14 @@
+{% extends 'accounts/profile-base.html' %}
+{% load static %}
+{% block title %}Server Error{% endblock %}
+
+{% block page_content %}
+<div class="error-container">
+    <div class="error-content">
+        <h1 class="error-code">500</h1>
+        <h2 class="error-title">Server Error</h2>
+        <p class="error-message">Oops! Our dictionary server needs a moment to collect its thoughts.</p>
+        <a href="{% url 'dictionaries:home' %}" class="error-button">Return Home</a>
+    </div>
+</div>
+{% endblock %}

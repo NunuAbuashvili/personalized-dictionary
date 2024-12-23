@@ -69,6 +69,8 @@
                class="dictionary-actions-button">Update</a>
             <a href="{% url 'dictionaries:entry-delete' user_slug=user.slug folder_slug=entry.dictionary.folder.slug dictionary_slug=entry.dictionary.slug entry_slug=entry.slug %}"
                class="dictionary-actions-button">Delete</a>
+            <a href="{% url 'dictionaries:dictionary-detail' user_slug=user.slug folder_slug=entry.dictionary.folder.slug dictionary_slug=entry.dictionary.slug %}"
+               class="dictionary-actions-button">Back</a>
         </div>
     {% endif %}
 </div>
