@@ -30,9 +30,10 @@ from .serializers import (UserSignupSerializer,
 
 
 def send_verification_email(user, name, subject):
+    current_site = 'https://nunu29.pythonanywhere.com/'
     token = RefreshToken.for_user(user).access_token
     token.set_exp(lifetime=timedelta(minutes=15))
-    verification_link = f"https://{current_site.domain}{reverse('accounts:verify_email', kwargs={'uidb64': uidb64, 'token': token})}"
+    verification_link = f"{current_site.domain}{reverse('accounts:verify_email', kwargs={'uidb64': uidb64, 'token': token})}"
 
     html_content = render_to_string(
         "accounts/verification-email.html",

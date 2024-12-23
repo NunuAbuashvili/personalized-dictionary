@@ -4,7 +4,6 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView
-from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import PermissionDenied
 from django.core.mail import EmailMultiAlternatives
 from django.http import HttpRequest, HttpResponse, Http404
@@ -31,12 +30,12 @@ from .models import CustomUser, UserProfile
 
 # Verification Email
 def send_verification_email(user, name=None):
-    current_site = get_current_site(request)
+    current_site = 'https://nunu29.pythonanywhere.com/'
     subject = 'Verify Your Account'
     token = default_token_generator.make_token(user)
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
 
-    verification_link = f"https://{current_site.domain}{reverse('accounts:verify_email', kwargs={'uidb64': uidb64, 'token': token})}"
+    verification_link = f"{current_site}{reverse('accounts:verify_email', kwargs={'uidb64': uidb64, 'token': token})}"
 
     html_content = render_to_string(
         "accounts/verification-email.html",
