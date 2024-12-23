@@ -490,7 +490,6 @@ def fetch_data_from_openai(entry_word, entry_language, target_languages):
     )
 
     content = completion.choices[0].message.content
-    print(content)
     if content.startswith('Incorrect'):
         return None
     if content.startswith("```json"):
@@ -573,7 +572,6 @@ class EntryInitiateView(CustomLoginRequiredMixin, CreateView):
         entry_language = entry_language[0]
         target_languages = form.cleaned_data['target_languages'],
         target_languages = target_languages[0]
-        print(target_languages)
 
         # Store data in session for further processing
         self.request.session['entry_creation_data'] = {
@@ -594,7 +592,9 @@ class EntryInitiateView(CustomLoginRequiredMixin, CreateView):
         return redirect(url)
 
     def form_invalid(self, form):
-        messages.error(self.request, _('You have already added this word.'))
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(self.request, f'Translation Languages: {str(error)}')
         return super().form_invalid(form)
 
 
