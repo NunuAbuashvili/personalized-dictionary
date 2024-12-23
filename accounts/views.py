@@ -36,7 +36,7 @@ def send_verification_email(user, name=None):
     token = default_token_generator.make_token(user)
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
 
-    verification_link = f"https://{current_site.domain}{reverse(
+    verification_link = f"https://https://nunu29.pythonanywhere.com/{reverse(
         'accounts:verify_email', kwargs={'uidb64': uidb64, 'token': token}
     )}"
 
