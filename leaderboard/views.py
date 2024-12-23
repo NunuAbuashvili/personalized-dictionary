@@ -5,7 +5,7 @@ from django.views.generic import ListView
 from .models import UserStatistics
 
 
-class LeaderboardView(LoginRequiredMixin, ListView):
+class LeaderboardView(ListView):
     model = UserStatistics
     template_name = 'leaderboard/leaderboard.html'
 

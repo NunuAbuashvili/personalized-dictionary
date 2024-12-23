@@ -7,52 +7,59 @@
 
 {% block content %}
 <div class="navbar">
-{#    {% cache 600 'navbar' user user.profile.updated_at %}#}
-    <nav class="navbar-content">
-        <ul class="navbar-links">
-            <li><a href="{% url 'dictionaries:home' %}">Home</a></li>
-            <li><a href="{% url 'leaderboard:leaderboard' %}">Leaderboard</a></li>
-            <li><a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}">My Folders</a></li>
-            <li><a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}">My Dictionaries</a></li>
-        </ul>
-        {% if user.profile.image %}
-            <img src="{{ user.profile.image.url }}" alt="Profile image" class="user-pic" onclick="toggleMenu()">
-        {% else %}
-            <img src="{{ MEDIA_URL }}default.jpeg" alt="Default profile image" class="user-pic" onclick="toggleMenu()">
-        {% endif %}
+    {% cache 600 'navbar' request.user user user.profile.updated_at %}
+        <nav class="navbar-content">
+            <ul class="navbar-links">
+                <li><a href="{% url 'dictionaries:home' %}">Home</a></li>
+                <li><a href="{% url 'leaderboard:leaderboard' %}">Leaderboard</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}">My Folders</a></li>
+                    <li><a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}">My Dictionaries</a></li>
+                {% else %}
+                    <li><a href="{% url 'accounts:login' %}">Login</a></li>
+                {% endif %}
+            </ul>
 
-        <div class="sub-menu-wrap" id="subMenu">
-            <div class="sub-menu">
-                <div class="user-info">
-                    {% if user.profile.image %}
-                        <img src="{{ user.profile.image.url }}" alt="Profile">
-                    {% else %}
-                        <img src="{{ MEDIA_URL }}default.jpeg" alt="Default Profile">
-                    {% endif %}
-                    <h3>{{ user.username }}</h3>
+            {% if user.is_authenticated %}
+                {% if user.profile.image %}
+                    <img src="{{ user.profile.image.url }}" alt="Profile image" class="user-pic" onclick="toggleMenu()">
+                {% else %}
+                    <img src="{{ MEDIA_URL }}default.jpeg" alt="Default profile image" class="user-pic" onclick="toggleMenu()">
+                {% endif %}
+
+                <div class="sub-menu-wrap" id="subMenu">
+                    <div class="sub-menu">
+                        <div class="user-info">
+                            {% if user.profile.image %}
+                                <img src="{{ user.profile.image.url }}" alt="Profile">
+                            {% else %}
+                                <img src="{{ MEDIA_URL }}default.jpeg" alt="Default Profile">
+                            {% endif %}
+                            <h3>{{ user.username }}</h3>
+                        </div>
+                        <hr>
+
+                        <a href="{% url 'accounts:update_profile' user_slug=user.slug %}" class="sub-menu-link">
+                            <p>Edit Profile</p>
+                            <span>></span>
+                        </a>
+                        <a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}" class="sub-menu-link">
+                            <p>My Folders</p>
+                            <span>></span>
+                        </a>
+                        <a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}" class="sub-menu-link">
+                            <p>My Dictionaries</p>
+                            <span>></span>
+                        </a>
+                        <a href="{% url 'accounts:logout' %}" class="sub-menu-link">
+                            <p>Logout</p>
+                            <span>></span>
+                        </a>
+                    </div>
                 </div>
-                <hr>
-
-                <a href="{% url 'accounts:update_profile' user_slug=user.slug %}" class="sub-menu-link">
-                    <p>Edit Profile</p>
-                    <span>></span>
-                </a>
-                <a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}" class="sub-menu-link">
-                    <p>My Folders</p>
-                    <span>></span>
-                </a>
-                <a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}" class="sub-menu-link">
-                    <p>My Dictionaries</p>
-                    <span>></span>
-                </a>
-                <a href="{% url 'accounts:logout' %}" class="sub-menu-link">
-                    <p>Logout</p>
-                    <span>></span>
-                </a>
-            </div>
-        </div>
-    </nav>
-{#    {% endcache %}#}
+            {% endif %}
+        </nav>
+    {% endcache %}
 </div>
 
 <div class="profile-container">
@@ -69,28 +76,30 @@
 
     <!-- Sidebar -->
     {% cache 600 'profile-sidebar' user %}
-    <div class="profile-sidebar">
-        <ul class="sidebar-menu">
-            <li><a href="{% url 'accounts:view_profile' user_slug=user.slug %}">My Account</a></li>
-            <hr>
-            <li><a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}">My Folders</a>
-                <ul class="language-menu">
-                    {% if folder_languages %}
-                        {% for language in folder_languages %}
-                            <li><a href="#" onclick="filterFolders('{{ language.name }}')">{{ language.name }}</a></li>
-                        {% endfor %}
-                    {% else %}
-                        <li class="no-languages">No languages available</li>
-                    {% endif %}
+        {% if user.is_authenticated %}
+            <div class="profile-sidebar">
+                <ul class="sidebar-menu">
+                    <li><a href="{% url 'accounts:view_profile' user_slug=user.slug %}">My Account</a></li>
+                    <hr>
+                    <li><a href="{% url 'dictionaries:folder-list' user_slug=user.slug %}">My Folders</a>
+                        <ul class="language-menu">
+                            {% if folder_languages %}
+                                {% for language in folder_languages %}
+                                    <li><a href="#" onclick="filterFolders('{{ language.name }}')">{{ language.name }}</a></li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="no-languages">No languages available</li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    <hr>
+                    <li><a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}">My Dictionaries</a>
+                    <hr>
+                    <li><a href="{% url 'accounts:logout' %}">Logout</a></li>
+                    <hr>
                 </ul>
-            </li>
-            <hr>
-            <li><a href="{% url 'dictionaries:dictionary-list' user_slug=user.slug %}">My Dictionaries</a>
-            <hr>
-            <li><a href="{% url 'accounts:logout' %}">Logout</a></li>
-            <hr>
-        </ul>
-    </div>
+            </div>
+        {% endif %}
     {% endcache %}
 </div>
 {% endblock %}

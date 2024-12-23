@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from rest_framework.fields import DateTimeField
+from rest_framework.fields import DateTimeField, CurrentUserDefault
 from django.utils.translation import gettext_lazy as _
 
 from dictionary.models import *
@@ -62,6 +62,22 @@ class MiniDictionarySerializer(serializers.ModelSerializer):
         model = Dictionary
         fields = ('id', 'name', 'description')
 
+    def create(self, validated_data):
+        folder = self.context.get('folder')
+        dictionary = Dictionary.objects.create(
+            folder=folder,
+            **validated_data
+        )
+        return dictionary
+
+    def update(self, instance, validated_data):
+        folder = self.context.get('folder')
+        instance.folder = folder
+        instance.name = validated_data.get('name', instance.name).title()
+        instance.description = validated_data.get('description', instance.description).capitalize()
+        instance.save()
+        return instance
+
 
 class DictionaryFolderSerializer(serializers.ModelSerializer):
     language = LanguageSerializer()
@@ -75,6 +91,33 @@ class DictionaryFolderSerializer(serializers.ModelSerializer):
         fields = ('id', 'name',
                   'user', 'language', 'dictionaries',
                   'created_at', 'updated_at')
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        language_data = validated_data.pop('language')
+        language = Language.objects.filter(
+            name=language_data['name']
+        ).first()
+        folder = DictionaryFolder.objects.create(
+            user=request.user,
+            language=language,
+            **validated_data
+        )
+        return folder
+
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+        language_data = validated_data.pop('language', None)
+
+        instance.user = request.user
+        instance.name = validated_data.get('name', instance.name).title()
+
+        if language_data:
+            language = Language.objects.get(name=language_data['name'])
+            instance.language = language
+
+        instance.save()
+        return instance
 
 
 class InitiateEntrySerializer(serializers.Serializer):
@@ -128,7 +171,7 @@ class CreateDictionaryEntrySerializer(serializers.ModelSerializer):
 
         try:
             dictionary = Dictionary.objects.filter(
-                folder__pk=view.kwargs.get('dictionary_pk'),
+                folder__pk=view.kwargs.get('folder_pk'),
                 pk=view.kwargs.get('dictionary_pk')
             ).first()
         except Dictionary.DoesNotExist:

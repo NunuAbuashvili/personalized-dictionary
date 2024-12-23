@@ -14,7 +14,6 @@ from django.utils.encoding import force_bytes
 from django.utils.html import strip_tags
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import CreateView, UpdateView, DeleteView
 
 from dictionary.models import Language
 from leaderboard.models import UserStatistics
@@ -201,8 +200,6 @@ def update_profile(request, user_slug):
 
 
 # View Profile
-@login_required
-@verified_email_required
 def view_user_profile(request, user_slug):
     try:
         page_user = CustomUser.annotate_all_statistics(
@@ -210,10 +207,6 @@ def view_user_profile(request, user_slug):
         ).select_related('profile').get(slug=user_slug)
     except CustomUser.DoesNotExist:
         raise Http404(_('User does not exist'))
-
-    if not request.user.is_authenticated:
-        messages.warning(request, _('You must be logged in to view profiles.'))
-        return redirect('accounts:login')
 
     try:
         profile = page_user.profile

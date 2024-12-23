@@ -29,11 +29,11 @@ from .models import (DictionaryFolder, Language,
                      Meaning, Example)
 
 
-class HomeView(LoginRequiredMixin, TemplateView):
+class HomeView(TemplateView):
     template_name = 'dictionary/home.html'
 
 
-class SearchResultsView(LoginRequiredMixin, ListView):
+class SearchResultsView(ListView):
     model = DictionaryEntry
     template_name = 'dictionary/search-results.html'
     context_object_name = 'entries'
@@ -55,7 +55,7 @@ class CustomLoginRequiredMixin(LoginRequiredMixin):
 
 
 # Dictionary Folder views (List, Detail, Create, Update, Delete)
-class FolderListView(CustomLoginRequiredMixin, ListView):
+class FolderListView(ListView):
     model = DictionaryFolder
     template_name = 'dictionary/folders.html'
     context_object_name = 'folders'
@@ -84,7 +84,7 @@ class FolderListView(CustomLoginRequiredMixin, ListView):
         return context
 
 
-class FolderDetailView(CustomLoginRequiredMixin, DetailView):
+class FolderDetailView(DetailView):
     model = DictionaryFolder
     template_name = 'dictionary/folder-detail.html'
     context_object_name = 'folder'
@@ -138,6 +138,7 @@ class FolderCreateView(CustomLoginRequiredMixin, CreateView):
         form = super().get_form(form_class)
         form.fields['name'].widget.attrs['placeholder'] = 'Enter folder name'
         form.fields['language'].empty_label = 'Select language...'
+        form.fields['language'].queryset = Language.objects.all()
         return form
 
     def get_context_data(self, **kwargs):
@@ -161,6 +162,11 @@ class FolderUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, UpdateView
     slug_url_kwarg = 'folder_slug'
     slug_field = 'slug'
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['language'].queryset = Language.objects.all()
+        return form
+
     def get_object(self, queryset=None):
         if not hasattr(self, '_object'):
             user_slug = self.kwargs.get('user_slug')
@@ -182,6 +188,7 @@ class FolderUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, UpdateView
         try:
             response = super().form_valid(form)
             messages.success(self.request, _('Folder updated successfully.'))
+            return response
         except IntegrityError:
             messages.error(self.request, _('A folder with that name already exists.'))
             return self.form_invalid(form)
@@ -217,7 +224,7 @@ class FolderDeleteView(CustomLoginRequiredMixin, UserPassesTestMixin, DeleteView
 
 
 # Dictionary views (Detail, Create, Update, Delete)
-class DictionaryListView(CustomLoginRequiredMixin, ListView):
+class DictionaryListView(ListView):
     model = Dictionary
     template_name = 'dictionary/dictionaries.html'
     context_object_name = 'dictionaries'
@@ -253,9 +260,7 @@ class DictionaryListView(CustomLoginRequiredMixin, ListView):
         return context
 
 
-class DictionaryDetailView(CustomLoginRequiredMixin,
-                           DetailView,
-                           MultipleObjectMixin):
+class DictionaryDetailView(DetailView, MultipleObjectMixin):
     model = Dictionary
     template_name = 'dictionary/dictionary-detail.html'
     context_object_name = 'dictionary'
@@ -499,7 +504,7 @@ def fetch_data_from_openai(entry_word, entry_language, target_languages):
 
 
 # Dictionary Entry views (Detail, Create, Update, Delete)
-class EntryDetailView(CustomLoginRequiredMixin, DetailView):
+class EntryDetailView(DetailView):
     model = DictionaryEntry
     template_name = 'dictionary/entry-detail.html'
     context_object_name = 'entry'
@@ -562,16 +567,17 @@ class EntryInitiateView(CustomLoginRequiredMixin, CreateView):
         )
 
         word = form.cleaned_data['word']
-        entry_language = self.request.POST.get('entry_language', '').strip().lower()
-        target_languages = [language.lower() for language in self.request.POST.get('translation_languages')]
-        target_languages = set(target_languages)
-        target_languages.discard(entry_language)
+        entry_language = form.cleaned_data['entry_language'],
+        entry_language = entry_language[0]
+        target_languages = form.cleaned_data['target_languages'],
+        target_languages = target_languages[0]
+        print(target_languages)
 
         # Store data in session for further processing
         self.request.session['entry_creation_data'] = {
             'word': word,
-            'target_languages': ', '.join([language.title() for language in target_languages]),
-            'entry_language': entry_language.title(),
+            'target_languages': ', '.join(target_languages),
+            'entry_language': entry_language,
             'user_slug': user_slug,
             'folder_slug': folder_slug,
             'dictionary_slug': dictionary_slug,
@@ -684,6 +690,8 @@ class EntryCreateView(CustomLoginRequiredMixin, CreateView):
                 definition = request.POST.get('definition', '').strip()
                 translations = request.POST.getlist('translations[]')
                 translation_languages = request.POST.getlist('translation_languages[]')
+                meanings = request.POST.getlist('meaning_description[]')
+                meaning_languages = request.POST.getlist('meaning_language[]')
 
                 if definition:
                     Meaning.objects.create(
@@ -699,6 +707,14 @@ class EntryCreateView(CustomLoginRequiredMixin, CreateView):
                             entry=entry,
                             description=translation,
                             target_language=target_language,
+                        )
+
+                for language, description in zip(meaning_languages, meanings):
+                    if language and description:
+                        Meaning.objects.create(
+                            entry=entry,
+                            description=description,
+                            target_language=Language.objects.get(name=language)
                         )
 
                 # Handle example sentences

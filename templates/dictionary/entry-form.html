@@ -23,15 +23,27 @@
 
             <!-- Entry Word -->
             <div class="form-group">
-                {{ form.word.label }}
+                <label>Word</label>
                 {{ form.word }}
-                <input type="text" id="entry_language" name="entry_language" class="form-control" placeholder="Enter the language of the word, e.g., Georgian" required>
+            </div>
+
+            <!-- Entry Language -->
+            <div class="form-group">
+                <label>Word Language</label>
+                {{ form.entry_language }}
             </div>
 
             <!-- Target Languages -->
             <div class="form-group">
-                <label>Languages</label>
-                <input type="text" id="translation-languages" name="translation_languages" class="form-control" placeholder="A comma-separated list of the languages to translate the word into" required>
+                <label>Translation Languages</label>
+                <div class="language-checkbox-list">
+                    {% for checkbox in form.target_languages %}
+                    <div class="checkbox-item">
+                        {{ checkbox.tag }}
+                        <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
                 <p class="instruction">Click 'Generate' button to get translations and example sentences.</p>
             </div>
 

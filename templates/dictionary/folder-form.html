@@ -28,10 +28,24 @@
             <div class="form-group">
                 {{ form.name.label_tag }}
                 {{ form.name }}
+                {% if form.name.errors %}
+                    <div class="message error">
+                        {% for error in form.name.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
             <div class="form-group">
                 {{ form.language.label_tag }}
                 {{ form.language }}
+                {% if form.language.errors %}
+                    <div class="message error">
+                        {% for error in form.language.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
             {% if view_type == 'update' %}
                 <button type="submit" class="update-button">Update Folder</button>

@@ -57,6 +57,11 @@ class DictionaryFolderViewSet(ModelViewSet):
             return FlashcardFrontTypeSerializer
         return DictionaryFolderSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     @action(
         detail=True,
         methods=['get'],
@@ -169,6 +174,13 @@ class DictionaryViewSet(ModelViewSet):
         if self.action == 'generate_dictionary_flashcards':
             return FlashcardFrontTypeSerializer
         return DictionarySerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        folder_pk = self.kwargs.get('folder_pk', '')
+        folder = DictionaryFolder.objects.filter(pk=folder_pk).first()
+        context['folder'] = folder
+        return context
 
     @action(
         detail=True,
