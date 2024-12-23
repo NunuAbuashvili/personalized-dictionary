@@ -1,13 +1,13 @@
 {% extends 'accounts/profile-base.html' %}
 {% load static %}
-{% block title %}Page Not Found{% endblock %}
+{% block title %}Forbidden{% endblock %}
 
 {% block page_content %}
 <div class="error-container">
     <div class="error-content">
-        <h1 class="error-code">404</h1>
-        <h2 class="error-title">Page Not Found</h2>
-        <p class="error-message">We've looked it up in every dictionary, but this page doesn't exist.</p>
+        <h1 class="error-code">403</h1>
+        <h2 class="error-title">Forbidden</h2>
+        <p class="error-message">This content is marked as private in our dictionary.</p>
         <a href="{% url 'dictionaries:home' %}" class="error-button">Return Home</a>
     </div>
 </div>
