@@ -9,9 +9,10 @@ def verified_email_required(view_func):
     def wrapper(request, *args, **kwargs):
         if not request.user.is_verified:
             resend_link = reverse('accounts:resend_verification')
+            resend_text = _('Resend verification email.')
             warning_message = mark_safe(
                 _('Please verify your email before accessing this page. ') +
-                f'<a href="{resend_link}" class="resend-link">{_('Resend verification email.')}</a>'
+                f'<a href="{resend_link}" class="resend-link">{resend_text}</a>'
             )
             messages.warning(request, warning_message)
             return redirect('accounts:login')
