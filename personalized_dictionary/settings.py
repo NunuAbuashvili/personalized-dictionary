@@ -12,7 +12,7 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 OPEN_API_KEY = os.getenv('OPEN_API_KEY')
 
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ['*']
 
 
