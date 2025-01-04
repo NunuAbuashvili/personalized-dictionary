@@ -13,6 +13,7 @@
         {% else %}
             <p class="entry-language">No description.</p>
         {% endif %}
+        <p class="entry-language">Visibility: {{ dictionary.accessibility }}</p>
 
         {% if dictionary.folder.user == user %}
             <div class="dictionary-actions">

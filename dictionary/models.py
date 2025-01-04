@@ -34,10 +34,15 @@ class Language(models.Model):
 
 
 class DictionaryFolder(models.Model):
+    ACCESSIBILITY_CHOICES = [
+        ('Public', _('Public')),
+        ('Private', _('Private')),
+    ]
     name = models.CharField(_('dictionary folder name'), max_length=255)
     slug = models.SlugField(_('slug'), allow_unicode=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='folders')
     language = models.ForeignKey(Language, on_delete=models.CASCADE, related_name='folders')
+    accessibility = models.CharField(choices=ACCESSIBILITY_CHOICES, max_length=10, default='Public')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -72,10 +77,15 @@ class DictionaryFolder(models.Model):
 
 
 class Dictionary(models.Model):
+    ACCESSIBILITY_CHOICES = [
+        ('Public', _('Public')),
+        ('Private', _('Private')),
+    ]
     name = models.CharField(_('dictionary name'), max_length=255)
     slug = models.SlugField(_('slug'), allow_unicode=True)
     description = models.TextField(_('dictionary description'), blank=True, null=True)
     folder = models.ForeignKey(DictionaryFolder, on_delete=models.CASCADE, related_name='dictionaries')
+    accessibility = models.CharField(choices=ACCESSIBILITY_CHOICES, max_length=10, default='Public')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

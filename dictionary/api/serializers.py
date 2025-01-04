@@ -54,13 +54,13 @@ class DictionarySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Dictionary
-        fields = ('id', 'name', 'description', 'entries')
+        fields = ('id', 'name', 'description', 'accessibility', 'entries')
 
 
 class MiniDictionarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Dictionary
-        fields = ('id', 'name', 'description')
+        fields = ('id', 'name', 'description', 'accessibility')
 
     def create(self, validated_data):
         folder = self.context.get('folder')
@@ -75,6 +75,7 @@ class MiniDictionarySerializer(serializers.ModelSerializer):
         instance.folder = folder
         instance.name = validated_data.get('name', instance.name).title()
         instance.description = validated_data.get('description', instance.description).capitalize()
+        instance.accessibility = validated_data.get('accessibility', instance.accessibility)
         instance.save()
         return instance
 
@@ -88,8 +89,8 @@ class DictionaryFolderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DictionaryFolder
-        fields = ('id', 'name',
-                  'user', 'language', 'dictionaries',
+        fields = ('id', 'name', 'user', 'language',
+                  'accessibility', 'dictionaries',
                   'created_at', 'updated_at')
 
     def create(self, validated_data):
@@ -115,6 +116,8 @@ class DictionaryFolderSerializer(serializers.ModelSerializer):
         if language_data:
             language = Language.objects.get(name=language_data['name'])
             instance.language = language
+
+        instance.accessibility = validated_data.get('accessibility', instance.accessibility)
 
         instance.save()
         return instance

@@ -47,6 +47,17 @@
                     </div>
                 {% endif %}
             </div>
+            <div class="form-group">
+                {{ form.accessibility.label_tag }}
+                {{ form.accessibility }}
+                {% if form.accessibility.errors %}
+                    <div class="message error">
+                        {% for error in form.accessibility.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
             {% if view_type == 'update' %}
                 <button type="submit" class="update-button">Update Folder</button>
             {% else %}

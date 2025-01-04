@@ -1,8 +1,5 @@
 from rest_framework import permissions
 from rest_framework.exceptions import PermissionDenied
-from django.utils.translation import gettext_lazy as _
-
-from dictionary.models import DictionaryFolder
 
 
 class IsUserProfileOrReadOnly(permissions.BasePermission):

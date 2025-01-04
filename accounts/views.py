@@ -13,7 +13,9 @@ from django.urls import reverse, reverse_lazy
 from django.utils.encoding import force_bytes
 from django.utils.html import strip_tags
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+
 
 from dictionary.models import Language
 from leaderboard.models import UserStatistics
@@ -150,6 +152,19 @@ class CustomLoginView(LoginView):
     """
     authentication_form = CustomAuthenticationForm
     template_name = 'accounts/login.html'
+
+    def form_valid(self, form):
+        user = form.get_user()
+        resend_link = reverse('accounts:resend_verification')
+        resend_text = _('Resend verification email.')
+        if not user.is_verified:
+            warning_message = mark_safe(
+                _('Please verify your email before accessing this page. ') +
+                f'<a href="{resend_link}" class="resend-link">{resend_text}</a>'
+            )
+            messages.warning(self.request, warning_message)
+            return redirect('accounts:login')
+        return super().form_valid(form)
 
     def get_success_url(self):
         next_url = self.request.GET.get('next') or self.request.POST.get('next')

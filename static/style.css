@@ -1433,6 +1433,7 @@ nav ul li a,
 .password-reset-container .form
 {
     width: 50%;
+    height: 100%;
     padding: 30px;
     background-color: #fff;
     transition: margin-left 0.18s ease;

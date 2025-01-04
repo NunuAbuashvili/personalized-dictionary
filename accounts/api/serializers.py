@@ -11,7 +11,7 @@ class UserSignupSerializer(serializers.ModelSerializer):
     """
     Serializer for user registration that handles password validation and user creation.
 
-    Fields: username, email, password, password confirmation, country.
+    Fields: username, email, password, and password confirmation.
     Ensures passwords match and meet Django's password validation requirements.
     """
     password = serializers.CharField(
@@ -27,12 +27,10 @@ class UserSignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'password', 'password2')
+        fields = ('username', 'email', 'password', 'password2')
         extra_kwargs = {
             'username': {'label': _('Username')},
             'email': {'label': _('Email')},
-            'first_name': {'label': _('First Name')},
-            'last_name': {'label': _('Last Name')},
         }
 
     def validate(self, data):
@@ -51,7 +49,6 @@ class UserSignupSerializer(serializers.ModelSerializer):
         # Check for existing unverified user
         try:
             existing_user = CustomUser.objects.get(email=email)
-            print("User already exists:", existing_user)
             if not existing_user.is_verified:
                 existing_user.delete()
             else:
@@ -69,9 +66,6 @@ class UserSignupSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
-            country=validated_data['country'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
         )
         return user
 
@@ -109,11 +103,11 @@ class UserProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """
-        Update a UserProfile instance and its associated User.
+        Update a UserProfile instance and its associated CustomUser.
         """
         user_data = validated_data.pop('user', {})
 
-        # Update User instance
+        # Update CustomUser instance
         user = instance.user
         user.username = user_data.get('username', user.username)
         user.first_name = user_data.get('first_name', user.first_name)

@@ -12,6 +12,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (ListView, DetailView,
                                   CreateView, UpdateView,
@@ -20,6 +21,7 @@ from django.views.generic.list import MultipleObjectMixin
 import json
 import random
 
+from accounts.decorators import verified_email_required
 from accounts.models import CustomUser
 from .forms import DictionaryEntryForm
 from .filters import (DictionaryEntryFilter, DictionaryFolderFilter,
@@ -71,11 +73,17 @@ class FolderListView(ListView):
         )
 
     def get_queryset(self):
-        return DictionaryFolder.objects.filter(
-            user=self.folder_author
-        ).select_related(
-            'user', 'language'
-        ).order_by('-created_at')
+        if self.request.user == self.folder_author:
+            # If the request user is the folder author, return all folders
+            return DictionaryFolder.objects.filter(
+                user=self.folder_author
+            ).select_related('user', 'language').order_by('-created_at')
+        else:
+            # If the request user is not the folder author, return only public folders
+            return DictionaryFolder.objects.filter(
+                user=self.folder_author,
+                accessibility='Public'
+            ).select_related('user', 'language').order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         queryset = self.get_queryset()
@@ -109,13 +117,23 @@ class FolderDetailView(DetailView):
         user_slug = self.kwargs.get('user_slug')
         folder_slug = self.kwargs.get('folder_slug')
 
-        return get_object_or_404(
+        folder = get_object_or_404(
             queryset,
             user__slug=user_slug,
             slug=folder_slug)
 
+        if folder.user != self.request.user and folder.accessibility != 'Public':
+            raise PermissionDenied(_('You do not have permission to view this folder.'))
+
+        return folder
+
     def get_context_data(self, **kwargs):
-        dictionaries = self.object.dictionaries.all().order_by('-created_at')
+        if self.request.user == self.object.user:
+            dictionaries = self.object.dictionaries.all().order_by('-created_at')
+        else:
+            dictionaries = self.object.dictionaries.filter(
+                accessibility='Public'
+            ).order_by('-created_at')
         dictionary_filter = DictionaryFilter(
             self.request.GET, queryset=dictionaries
         )
@@ -125,9 +143,10 @@ class FolderDetailView(DetailView):
         return context
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class FolderCreateView(CustomLoginRequiredMixin, CreateView):
     model = DictionaryFolder
-    fields = ('name', 'language')
+    fields = ('name', 'language', 'accessibility')
     template_name = 'dictionary/folder-form.html'
 
     def dispatch(self, request, *args, **kwargs):
@@ -141,6 +160,7 @@ class FolderCreateView(CustomLoginRequiredMixin, CreateView):
         form.fields['name'].widget.attrs['placeholder'] = 'Enter folder name'
         form.fields['language'].empty_label = 'Select language...'
         form.fields['language'].queryset = Language.objects.all()
+        form.fields['accessibility'].label = 'Folder visibility:'
         return form
 
     def get_context_data(self, **kwargs):
@@ -157,16 +177,18 @@ class FolderCreateView(CustomLoginRequiredMixin, CreateView):
             return self.form_invalid(form)
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class FolderUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = DictionaryFolder
     template_name = 'dictionary/folder-form.html'
-    fields = ('name', 'language')
+    fields = ('name', 'language', 'accessibility')
     slug_url_kwarg = 'folder_slug'
     slug_field = 'slug'
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         form.fields['language'].queryset = Language.objects.all()
+        form.fields['accessibility'].label = 'Folder visibility:'
         return form
 
     def get_object(self, queryset=None):
@@ -200,6 +222,7 @@ class FolderUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, UpdateView
         return self.request.user == folder.user
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class FolderDeleteView(CustomLoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = DictionaryFolder
     template_name = 'dictionary/folder-confirm-delete.html'
@@ -242,12 +265,21 @@ class DictionaryListView(ListView):
         )
 
     def get_queryset(self):
-        return Dictionary.objects.filter(
-            folder__user=self.dictionary_author
-        ).select_related(
-            'folder',
-            'folder__language'
-        ).order_by('-created_at')
+        if self.request.user == self.dictionary_author:
+            return Dictionary.objects.filter(
+                folder__user=self.dictionary_author
+            ).select_related(
+                'folder',
+                'folder__language'
+            ).order_by('-created_at')
+        else:
+            return Dictionary.objects.filter(
+                folder__user=self.dictionary_author,
+                accessibility='Public'
+            ).select_related(
+                'folder',
+                'folder__language'
+            ).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         queryset = self.get_queryset()
@@ -298,7 +330,12 @@ class DictionaryDetailView(DetailView, MultipleObjectMixin):
             queryset = self.get_queryset()
 
         dictionary_slug = self.kwargs.get('dictionary_slug')
-        return get_object_or_404(queryset, slug=dictionary_slug)
+        dictionary = get_object_or_404(queryset, slug=dictionary_slug)
+
+        if dictionary.folder.user != self.request.user and dictionary.accessibility != 'Public':
+            raise PermissionDenied(_('You do not have permission to view this dictionary.'))
+
+        return dictionary
 
     def get_context_data(self, **kwargs):
         dictionary = self.object
@@ -310,9 +347,10 @@ class DictionaryDetailView(DetailView, MultipleObjectMixin):
         return context
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class DictionaryCreateView(CustomLoginRequiredMixin, CreateView):
     model = Dictionary
-    fields = ('name', 'description')
+    fields = ('name', 'description', 'accessibility')
     template_name = 'dictionary/dictionary-form.html'
 
     def dispatch(self, request, *args, **kwargs):
@@ -325,6 +363,7 @@ class DictionaryCreateView(CustomLoginRequiredMixin, CreateView):
         form = super().get_form(form_class)
         form.fields['name'].widget.attrs['placeholder'] = 'Enter dictionary name'
         form.fields['description'].widget.attrs['placeholder'] = 'Write a short dictionary description...'
+        form.fields['accessibility'].label = 'Dictionary visibility:'
         return form
 
     def get_context_data(self, **kwargs):
@@ -350,9 +389,10 @@ class DictionaryCreateView(CustomLoginRequiredMixin, CreateView):
             return self.form_invalid(form)
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class DictionaryUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Dictionary
-    fields = ('name', 'description')
+    fields = ('name', 'description', 'accessibility')
     template_name = 'dictionary/dictionary-form.html'
     slug_url_kwarg = 'dictionary_slug'
     slug_field = 'slug'
@@ -369,6 +409,11 @@ class DictionaryUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, Update
                 slug=dictionary_slug
             )
         return self._object
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['accessibility'].label = 'Dictionary visibility:'
+        return form
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -398,6 +443,7 @@ class DictionaryUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, Update
         return self.request.user == dictionary.folder.user
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class DictionaryDeleteView(CustomLoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Dictionary
     template_name = 'dictionary/dictionary-confirm-delete.html'
@@ -533,6 +579,7 @@ class EntryDetailView(DetailView):
         )
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class EntryInitiateView(CustomLoginRequiredMixin, CreateView):
     model = DictionaryEntry
     template_name = 'dictionary/entry-form.html'
@@ -598,6 +645,7 @@ class EntryInitiateView(CustomLoginRequiredMixin, CreateView):
         return super().form_invalid(form)
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class EntryCreateView(CustomLoginRequiredMixin, CreateView):
     model = DictionaryEntry
     fields = ('notes', 'image')
@@ -753,6 +801,7 @@ class EntryCreateView(CustomLoginRequiredMixin, CreateView):
             return render(request, self.template_name, context)
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class EntryUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = DictionaryEntry
     fields = ('word', 'notes', 'image')
@@ -871,6 +920,7 @@ class EntryUpdateView(CustomLoginRequiredMixin, UserPassesTestMixin, UpdateView)
         return self.request.user == entry.dictionary.folder.user
 
 
+@method_decorator(verified_email_required, name='dispatch')
 class EntryDeleteView(CustomLoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = DictionaryEntry
     template_name = 'dictionary/entry-confirm-delete.html'
