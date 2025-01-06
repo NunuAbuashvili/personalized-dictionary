@@ -23,7 +23,7 @@
             <h2 class="section-title">Add a New Dictionary Folder</h2>
         {% endif %}
         <hr>
-        <form method="post" class="form new-folder-form">
+        <form method="post" class="form">
             {% csrf_token %}
             <div class="form-group">
                 {{ form.name.label_tag }}
@@ -61,7 +61,7 @@
             {% if view_type == 'update' %}
                 <button type="submit" class="update-button">Update Folder</button>
             {% else %}
-                <button type="submit" class="update-button">Create Folder</button>
+                <button type="submit" class="create-button">Create Folder</button>
             {% endif %}
         </form>
     </div>

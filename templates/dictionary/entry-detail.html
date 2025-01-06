@@ -31,7 +31,7 @@
     <div class="entry-meanings">
         <h2>Meanings</h2>
         {% for meaning in entry.meanings.all %}
-            <div class="meaning-item">
+            <div class="meanings-item">
                 <p><strong>{{ meaning.target_language }}: </strong>{{ meaning.description }}</p>
             </div>
         {% empty %}
@@ -43,7 +43,7 @@
     <div class="entry-examples">
         <h2>Example Sentences</h2>
         {% for example in entry.examples.all %}
-            <div class="example-item">
+            <div class="examples-item">
                 <p>{{ example.sentence|highlight:entry.word|safe }}</p>
             </div>
         {% empty %}
@@ -52,9 +52,9 @@
     </div>
 
     <!-- Notes Section -->
-    <div class="entry-examples">
+    <div class="entry-notes">
         <h2>Notes</h2>
-        <div class="meaning-item">
+        <div class="notes">
             {% if entry.notes %}
                 <p>{{ entry.notes }}</p>
             {% else %}
@@ -66,11 +66,11 @@
     {% if entry.dictionary.folder.user == user %}
         <div class="dictionary-actions">
             <a href="{% url 'dictionaries:entry-update' user_slug=user.slug folder_slug=entry.dictionary.folder.slug dictionary_slug=entry.dictionary.slug entry_slug=entry.slug %}"
-               class="dictionary-actions-button">Update</a>
+               class="actions-button">Update</a>
             <a href="{% url 'dictionaries:entry-delete' user_slug=user.slug folder_slug=entry.dictionary.folder.slug dictionary_slug=entry.dictionary.slug entry_slug=entry.slug %}"
-               class="dictionary-actions-button">Delete</a>
+               class="actions-button">Delete</a>
             <a href="{% url 'dictionaries:dictionary-detail' user_slug=user.slug folder_slug=entry.dictionary.folder.slug dictionary_slug=entry.dictionary.slug %}"
-               class="dictionary-actions-button">Back</a>
+               class="actions-button">Back</a>
         </div>
     {% endif %}
 </div>

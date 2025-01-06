@@ -3,12 +3,12 @@
 {% block title %}Home{% endblock %}
 
 {% block page_content %}
-<div class="leaderboard-container">
+<div class="main-container">
     <div class="welcome-container">
         <h1 class="welcome-title">Welcome to your Personal Dictionary</h1>
         <img src="{% static 'img/home-logo.png' %}" alt="Personal Dictionary Logo" class="dictionary-logo">
         <form method="get" action="{% url 'dictionaries:search' %}">
-            <div class="search-sort-container">
+            <div class="search-container">
                 {{ search_filter.form.as_p }}
                 <button class="search-button">Search</button>
             </div>

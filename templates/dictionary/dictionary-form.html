@@ -15,14 +15,14 @@
 
 {% block page_content %}
 <div class="dictionary-folders-container">
-    <div class="new-folder-section">
+    <div class="new-dictionary-section">
         {% if view_type == 'update' %}
             <h2 class="section-title">Update the Dictionary</h2>
         {% else %}
             <h2 class="section-title">Add a New Dictionary</h2>
         {% endif %}
         <hr>
-        <form method="post" class="form new-folder-form">
+        <form method="post" class="form">
             {% csrf_token %}
             <div class="form-group">
                 {{ form.name.label_tag }}
@@ -39,7 +39,7 @@
             {% if view_type == 'update' %}
                 <button type="submit" class="update-button">Update Dictionary</button>
             {% else %}
-                <button type="submit" class="update-button">Create Dictionary</button>
+                <button type="submit" class="create-button">Create Dictionary</button>
             {% endif %}
         </form>
     </div>

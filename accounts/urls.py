@@ -14,7 +14,7 @@ urlpatterns = [
     path('signin/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', views.user_logout, name='logout'),
     path('verify-email/<str:uidb64>/<token>/', views.verify_email, name='verify_email'),
-    path('resend-verification/', views.resend_verification_email, name='resend_verification'),
+    path('resend-verification/<int:user_id>/', views.resend_verification_email, name='resend_verification'),
     path('password-reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
     path('password-reset/done/', PasswordResetDoneView.as_view(
         template_name='accounts/password-reset-done.html'

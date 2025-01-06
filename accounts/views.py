@@ -71,9 +71,11 @@ def get_user_from_token(uidb64, token):
     return None
 
 
-def resend_verification_email(request):
-    if not request.user.is_verified:
-        send_verification_email(request.user)
+def resend_verification_email(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+
+    if not user.is_verified:
+        send_verification_email(user)
         messages.success(request, _('Verification email resent. Please check your inbox.'))
         return redirect('accounts:login')
 
@@ -145,7 +147,6 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     success_url = reverse_lazy('accounts:password_reset_complete')
 
 
-# Login
 class CustomLoginView(LoginView):
     """
     Extends Django's LoginView to handle user login.
@@ -155,9 +156,9 @@ class CustomLoginView(LoginView):
 
     def form_valid(self, form):
         user = form.get_user()
-        resend_link = reverse('accounts:resend_verification')
-        resend_text = _('Resend verification email.')
         if not user.is_verified:
+            resend_link = reverse('accounts:resend_verification', kwargs={'user_id': user.id})
+            resend_text = _('Resend verification email.')
             warning_message = mark_safe(
                 _('Please verify your email before accessing this page. ') +
                 f'<a href="{resend_link}" class="resend-link">{resend_text}</a>'

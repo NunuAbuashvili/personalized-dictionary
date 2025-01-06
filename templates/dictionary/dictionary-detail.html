@@ -13,13 +13,13 @@
         {% else %}
             <p class="entry-language">No description.</p>
         {% endif %}
-        <p class="entry-language">Visibility: {{ dictionary.accessibility }}</p>
+        <p class="entry-visibility">Visibility: {{ dictionary.accessibility }}</p>
 
         {% if dictionary.folder.user == user %}
             <div class="dictionary-actions">
-                <a href="{% url 'dictionaries:dictionary-update' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button">Update</a>
-                <a href="{% url 'dictionaries:dictionary-delete' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button">Delete</a>
-                <a href="{% url 'dictionaries:initiate-entry' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="dictionary-actions-button add-entry-button">+</a>
+                <a href="{% url 'dictionaries:dictionary-update' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="actions-button">Update</a>
+                <a href="{% url 'dictionaries:dictionary-delete' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="actions-button">Delete</a>
+                <a href="{% url 'dictionaries:initiate-entry' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" class="actions-button add-entry-button">+</a>
             </div>
         {% endif %}
     </div>
@@ -40,12 +40,12 @@
             </form>
         </div>
 
-        <div class="flashcard-section">
+        <div class="pdf-section">
             <p>
                 Press the button below to download this dictionary as a PDF file.
             </p>
             <form action="{% url 'dictionaries:dictionary-pdf-download' user_slug=user.slug folder_slug=dictionary.folder.slug dictionary_slug=dictionary.slug %}" method="get">
-                <button type="submit" class="flashcard-button">Download PDF</button>
+                <button type="submit" class="pdf-download-button">Download PDF</button>
             </form>
         </div>
     {% endif %}

@@ -19,9 +19,9 @@
     </div>
 </div>
 
-<div class="user-details-box">
+<div class="folder-details-box">
     <h4>{{ folder.name }}</h4>
-    <ul class="user-details-list">
+    <ul class="folder-details-list">
         <li>Visibility: {{ folder.accessibility }}</li>
         <li>Number of Dictionaries: {{ folder.dictionary_count }}</li>
         <li>Number of Entries: {{ folder.entry_count }}</li>
@@ -30,8 +30,8 @@
 
     {% if folder.user == user %}
         <div class="folder-actions">
-            <a href="{% url 'dictionaries:folder-update' user_slug=dictionary_author.slug folder_slug=folder.slug %}" class="dictionary-actions-button">Update Folder</a>
-            <a href="{% url 'dictionaries:folder-delete' user_slug=dictionary_author.slug folder_slug=folder.slug %}" class="dictionary-actions-button">Delete Folder</a>
+            <a href="{% url 'dictionaries:folder-update' user_slug=dictionary_author.slug folder_slug=folder.slug %}" class="actions-button">Update Folder</a>
+            <a href="{% url 'dictionaries:folder-delete' user_slug=dictionary_author.slug folder_slug=folder.slug %}" class="actions-button">Delete Folder</a>
         </div>
     {% endif %}
 </div>
@@ -54,21 +54,21 @@
         </form>
     </div>
 
-    <div class="flashcard-section">
+    <div class="pdf-section">
         <p>
             Press the button below to download this folder as a PDF file.
         </p>
         <form action="{% url 'dictionaries:folder-pdf-download' user_slug=user.slug folder_slug=folder.slug %}" method="get">
-            <button type="submit" class="flashcard-button">Download PDF</button>
+            <button type="submit" class="pdf-download-button">Download PDF</button>
         </form>
     </div>
 {% endif %}
 
 <!-- Dictionary Folders Section -->
 <div class="dictionary-folders-container">
-    <div class="dictionary-search-bar">
+    <div class="folder-search-bar">
         <form method="get">
-            <div class="search-sort-container">
+            <div class="search-container">
                 {{ filter.form.as_p }}
                 <button class="search-button">Search</button>
             </div>
@@ -90,9 +90,9 @@
         {% if dictionary_author == user %}
             <a href="{% url 'dictionaries:dictionary-create' user_slug=user.slug folder_slug=folder.slug %}"
                 class="dictionary-folder-link">
-                <div class="add-folder-btn">
-                    <div class="add-folder-icon">+</div>
-                    <div class="add-folder-text">Add Dictionary</div>
+                <div class="add-dictionary-btn">
+                    <div class="add-dictionary-icon">+</div>
+                    <div class="add-dictionary-text">Add Dictionary</div>
                 </div>
             </a>
         {% endif %}
