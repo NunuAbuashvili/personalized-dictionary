@@ -202,7 +202,7 @@ nav,
 .navbar-content {
     background: #fff;
     width: 100%;
-    padding: 10px 10%;
+    padding: 10px 5%;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -213,7 +213,7 @@ nav,
     width: 40px;
     border-radius: 50%;
     cursor: pointer;
-    margin-left: 30px;
+    margin-left: 15px;
 }
 
 nav ul,
@@ -226,7 +226,7 @@ nav ul li,
 .navbar-links li {
     display: inline-block;
     list-style: none;
-    margin: 10px 20px;
+    margin: 10px 15px;
 }
 
 nav ul li a,
@@ -238,7 +238,7 @@ nav ul li a,
 .sub-menu-wrap {
     position: absolute;
     top: 100%;
-    right: 10%;
+    right: 5%;
     width: 320px;
     max-height: 0;
     overflow: hidden;
@@ -253,6 +253,7 @@ nav ul li a,
     background: #fff;
     padding: 20px;
     margin: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .user-info {
@@ -314,6 +315,7 @@ nav ul li a,
     align-items: center;
     gap: 10px;
     margin-bottom: 30px;
+    padding: 0 20px;
 }
 
 .welcome-title {
@@ -462,17 +464,18 @@ nav ul li a,
 .main-page-container {
     display: flex;
     max-width: 1200px;
-    margin: 100px auto 20px;
-    background-color: white;
+    margin: 100px auto;
+    background-color: #fff;
     box-shadow: 0 0 15px rgba(0,0,0,0.1);
     border-radius: 10px;
     overflow: hidden;
+    padding-top: 80px;
 }
 
 .profile-sidebar {
     min-width: 300px;
     background-color: #f9f9f9;
-    padding: 100px 50px 100px 50px;
+    padding: 30px;
     border-right: 1px solid #e0e0e0;
 }
 
@@ -879,10 +882,7 @@ nav ul li a,
 
 /* Dictionary Detail */
 .dictionary-details-container {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
+    margin: 20px auto;
 }
 
 .entry-header {
@@ -914,7 +914,7 @@ nav ul li a,
     margin-top: 20px;
 }
 
-.dictionary-actions-button.add-entry-button {
+.actions-button.add-entry-button {
     background-color: rgba(255,255,255,0.5);
     color: #FF8A8A;
     font-weight: bold;
@@ -1341,14 +1341,16 @@ nav ul li a,
 .flashcard-container {
     perspective: 1000px;
     margin: 20px auto;
-    width: 330px;
-    height: 330px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .flashcard {
     position: relative;
-    width: 100%;
-    height: 100%;
+    width: 330px;
+    height: 330px;
     transform-style: preserve-3d;
     transition: transform 0.6s;
     cursor: pointer;
@@ -1567,4 +1569,74 @@ nav ul li a,
 .dictionary-folders-container .pagination-info {
     font-size: 0.9em;
     color: #666;
+}
+
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    /* Hide sidebar on mobile */
+    .profile-sidebar {
+        display: none;
+    }
+
+    /* Adjust navbar for mobile */
+    nav ul li,
+    .navbar-links li {
+        margin: 10px 8px;
+    }
+
+    .navbar-content {
+        padding: 10px 3%;
+    }
+
+    /* Adjust welcome title for mobile */
+    .welcome-title {
+        font-size: 1.8em;
+    }
+
+    /* Adjust logo size for mobile */
+    .dictionary-logo {
+        width: 120px;
+        height: 120px;
+    }
+
+    /* Adjust submenu position and width */
+    .sub-menu-wrap {
+        width: 90%;
+        right: 5%;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    /* Further adjustments for smaller screens */
+    nav ul li,
+    .navbar-links li {
+        margin: 10px 5px;
+        font-size: 0.9em;
+    }
+
+    .welcome-title {
+        font-size: 1.5em;
+    }
+
+    .dictionary-logo {
+        width: 100px;
+        height: 100px;
+    }
+
+    .profile-content,
+    .main-page-content {
+        padding: 15px;
+    }
+
+    .search-sort-container {
+        flex-direction: column;
+    }
+}
+
+/* Add hamburger menu for very small screens */
+@media screen and (max-width: 400px) {
+    .user-pic {
+        margin-left: 10px;
+    }
 }

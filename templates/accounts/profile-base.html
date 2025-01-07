@@ -39,6 +39,10 @@
                         </div>
                         <hr>
 
+                        <a href="{% url 'accounts:view_profile' user_slug=user.slug %}" class="sub-menu-link">
+                            <p>My Profile</p>
+                            <span>></span>
+                        </a>
                         <a href="{% url 'accounts:update_profile' user_slug=user.slug %}" class="sub-menu-link">
                             <p>Edit Profile</p>
                             <span>></span>
