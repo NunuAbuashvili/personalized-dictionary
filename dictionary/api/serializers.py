@@ -1,35 +1,54 @@
-from rest_framework import serializers
-from rest_framework.fields import DateTimeField, CurrentUserDefault
 from django.utils.translation import gettext_lazy as _
+from rest_framework import serializers
+from rest_framework.fields import CurrentUserDefault, DateTimeField
 
-from dictionary.models import *
 from accounts.models import CustomUser
+from dictionary.models import *
 
 
 class MiniCustomUserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for a minimal representation of a custom user.
+    """
     class Meta:
         model = CustomUser
         fields = ('id', 'username', 'email')
 
 
 class FormattedDateTimeField(DateTimeField):
+    """
+    Custom DateTime field that formats datetime objects to a specific string representation.
+
+    Formats the datetime as 'DD/MM/YYYY at HH:MM'.
+    """
     def to_representation(self, value):
         return value.strftime('%d/%m/%Y at %H:%M')
 
 
 class LanguageSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Language model, exposing only the name field.
+    """
     class Meta:
         model = Language
         fields = ('name',)
 
 
 class ExampleSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Example model, including sentence and source.
+    """
     class Meta:
         model = Example
         fields = ('sentence', 'source')
 
 
 class MeaningSerializer(serializers.ModelSerializer):
+    """
+    Serializer for dictionary entry meanings.
+
+    Includes description and target language as a slug-related field.
+    """
     target_language = serializers.SlugRelatedField(
         queryset=Language.objects.all(),
         slug_field='name',
@@ -41,6 +60,11 @@ class MeaningSerializer(serializers.ModelSerializer):
 
 
 class DictionaryEntrySerializer(serializers.ModelSerializer):
+    """
+    Comprehensive serializer for dictionary entries.
+
+    Includes nested serialization of examples and meanings.
+    """
     examples = ExampleSerializer(many=True)
     meanings = MeaningSerializer(many=True)
 
@@ -50,6 +74,11 @@ class DictionaryEntrySerializer(serializers.ModelSerializer):
 
 
 class DictionarySerializer(serializers.ModelSerializer):
+    """
+    Serializer for Dictionary model with nested entries.
+
+    Provides detailed dictionary information including all entries.
+    """
     entries = DictionaryEntrySerializer(many=True, read_only=True)
 
     class Meta:
@@ -58,11 +87,25 @@ class DictionarySerializer(serializers.ModelSerializer):
 
 
 class MiniDictionarySerializer(serializers.ModelSerializer):
+    """
+    Minimal serializer for Dictionary model.
+
+    Supports custom create and update methods with folder context.
+    """
     class Meta:
         model = Dictionary
         fields = ('id', 'name', 'description', 'accessibility')
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> Dictionary:
+        """
+        Create a new dictionary within a specific folder.
+
+        Args:
+            validated_data (dict): Validated dictionary data.
+
+        Returns:
+            Created Dictionary instance.
+        """
         folder = self.context.get('folder')
         dictionary = Dictionary.objects.create(
             folder=folder,
@@ -70,7 +113,17 @@ class MiniDictionarySerializer(serializers.ModelSerializer):
         )
         return dictionary
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Dictionary, validated_data: dict) -> Dictionary:
+        """
+        Update dictionary with folder context and additional data processing.
+
+        Args:
+            instance (Dictionary): Existing Dictionary instance.
+            validated_data (dict): Updated dictionary data.
+
+        Returns:
+            Updated Dictionary instance.
+        """
         folder = self.context.get('folder')
         instance.folder = folder
         instance.name = validated_data.get('name', instance.name).title()
@@ -81,6 +134,12 @@ class MiniDictionarySerializer(serializers.ModelSerializer):
 
 
 class DictionaryFolderSerializer(serializers.ModelSerializer):
+    """
+    Comprehensive serializer for DictionaryFolder model.
+
+    Includes nested serialization of language, user, and dictionaries.
+    Supports custom create and update methods.
+    """
     language = LanguageSerializer()
     user = MiniCustomUserSerializer(read_only=True)
     created_at = FormattedDateTimeField(read_only=True)
@@ -93,7 +152,16 @@ class DictionaryFolderSerializer(serializers.ModelSerializer):
                   'accessibility', 'dictionaries',
                   'created_at', 'updated_at')
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> DictionaryFolder:
+        """
+        Create a new dictionary folder with associated user and language.
+
+        Args:
+            validated_data (dict): Validated dictionary folder data.
+
+        Returns:
+            Created DictionaryFolder instance.
+        """
         request = self.context.get('request')
         language_data = validated_data.pop('language')
         language = Language.objects.filter(
@@ -106,7 +174,17 @@ class DictionaryFolderSerializer(serializers.ModelSerializer):
         )
         return folder
 
-    def update(self, instance, validated_data):
+    def update(self, instance: DictionaryFolder, validated_data: dict) -> DictionaryFolder:
+        """
+        Update dictionary folder with new data and language.
+
+        Args:
+            instance (DictionaryFolder): Existing DictionaryFolder instance.
+            validated_data (dict): Updated dictionary folder data.
+
+        Returns:
+            Updated DictionaryFolder instance.
+        """
         request = self.context.get('request')
         language_data = validated_data.pop('language', None)
 
@@ -124,15 +202,28 @@ class DictionaryFolderSerializer(serializers.ModelSerializer):
 
 
 class InitiateEntrySerializer(serializers.Serializer):
+    """
+    Serialization for initiating a dictionary entry with word and language details.
+
+    Validates and processes entry and target languages.
+    """
     word = serializers.CharField()
     entry_language = serializers.CharField()
     target_languages = serializers.ListField(
         child=serializers.CharField()
     )
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         """
-        Remove entry language from target languages and remove duplicates.
+        Validate and clean entry and target languages.
+
+        Removes entry language from target languages, as well as duplicates.
+
+        Args:
+            data (dict): Raw input data with entry and target languages.
+
+        Returns:
+            Cleaned and processed language data.
         """
         entry_language = data['entry_language'].strip().lower()
         target_languages = [language.lower() for language in data['target_languages']]
@@ -146,6 +237,11 @@ class InitiateEntrySerializer(serializers.Serializer):
 
 
 class OpenAIResponseSerializer(serializers.Serializer):
+    """
+    Serializer for processing OpenAI API responses for dictionary entries.
+
+    Handles word definition, translations, and example sentences.
+    """
     word = serializers.CharField()
     definition = serializers.ListField(
         child=serializers.DictField()
@@ -159,6 +255,11 @@ class OpenAIResponseSerializer(serializers.Serializer):
 
 
 class CreateDictionaryEntrySerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating and updating dictionary entries.
+
+    Supports nested creation of meanings and examples with validation.
+    """
     meanings = MeaningSerializer(many=True)
     examples = ExampleSerializer(many=True)
 
@@ -166,7 +267,21 @@ class CreateDictionaryEntrySerializer(serializers.ModelSerializer):
         model = DictionaryEntry
         fields = ('word', 'meanings', 'examples', 'notes', 'image')
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> DictionaryEntry:
+        """
+        Create a new dictionary entry with meanings and examples.
+
+        Validates unique word per user and associates entry with dictionary.
+
+        Args:
+            validated_data (dict): Validated entry data.
+
+        Returns:
+            Created DictionaryEntry instance.
+
+        Raises:
+            ValidationError: If word already exists or dictionary is not found.
+        """
         meanings_data = validated_data.pop('meanings', [])
         examples_data = validated_data.pop('examples', [])
 
@@ -201,7 +316,19 @@ class CreateDictionaryEntrySerializer(serializers.ModelSerializer):
 
         return entry
 
-    def update(self, instance, validated_data):
+    def update(self, instance: DictionaryEntry, validated_data: dict) -> DictionaryEntry:
+        """
+        Update an existing dictionary entry with new meanings and examples.
+
+        Deletes and recreates nested meanings and examples.
+
+        Args:
+            instance (DictionaryEntry): Existing DictionaryEntry to update.
+            validated_data (dict): Updated entry data.
+
+        Returns:
+            Updated DictionaryEntry instance.
+        """
         meanings_data = validated_data.pop('meanings', [])
         examples_data = validated_data.pop('examples', [])
 
@@ -227,6 +354,7 @@ class CreateDictionaryEntrySerializer(serializers.ModelSerializer):
 
 
 class SearchDictionaryEntrySerializer(serializers.ModelSerializer):
+    """Serializer for searching dictionary entries."""
     meanings = MeaningSerializer(many=True)
     author = MiniCustomUserSerializer(source='dictionary.folder.user', read_only=True)
     dictionary = serializers.StringRelatedField()
@@ -237,6 +365,11 @@ class SearchDictionaryEntrySerializer(serializers.ModelSerializer):
 
 
 class FlashcardFrontTypeSerializer(serializers.Serializer):
+    """
+    Serializer for selecting flashcard front display type.
+
+    Allows choosing between showing the word or its meaning(s).
+    """
     front_type = serializers.ChoiceField(
         choices=['word', 'meaning']
     )

@@ -19,6 +19,7 @@ and expand their vocabulary through a customized dictionary.
 ### Dictionary Organization ###
 - Organize vocabulary in custom folders (e.g., by books, topics, etc.)
 - Create multiple dictionaries within each folder (e.g., each chapter vocabulary inside a book folder, etc.)
+- Select dictionary visibility (public/private).
 
 ![alt text](/media/project_screenshots/folders.jpg)
 
@@ -62,7 +63,7 @@ using OpenAI API.
 ### Access Control & Permissions ###
 
 - **Public Access** 
-  - View all folders and dictionaries
+  - View all public folders and dictionaries
   - Browse dictionary entries
   - Access the leaderboard
   - Search functionality for dictionary entries
@@ -190,7 +191,6 @@ This project is part of an ongoing Django, DRF learning journey and has several 
 
 ### User Experience and Interface ###
 - Modern, responsive interface with improved navigation and accessibility.
-- Ability to change folder/dictionary visibility (public/private).
 - Interactive study modes and vocabulary learning games.
 - Desktop application development.
 - Customizable themes and layouts.

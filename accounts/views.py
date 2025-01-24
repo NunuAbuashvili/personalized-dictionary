@@ -2,105 +2,26 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView
+from django.contrib.auth.views import (LoginView, LogoutView,
+                                       PasswordResetConfirmView,
+                                       PasswordResetView)
 from django.core.exceptions import PermissionDenied
-from django.core.mail import EmailMultiAlternatives
-from django.http import HttpRequest, HttpResponse, Http404
-from django.shortcuts import render, redirect, get_object_or_404
-from django.template.loader import render_to_string
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
-from django.utils.encoding import force_bytes
-from django.utils.html import strip_tags
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-
 
 from dictionary.models import Language
 from leaderboard.models import UserStatistics
 from .decorators import verified_email_required
-from .forms import (CustomUserCreationForm,
-                    CustomAuthenticationForm,
-                    CustomPasswordResetForm,
-                    CustomSetPasswordForm,
-                    UserUpdateForm,
-                    UserProfileUpdateForm
-                    )
+from .forms import (CustomAuthenticationForm, CustomPasswordResetForm,
+                    CustomSetPasswordForm, CustomUserCreationForm,
+                    UserProfileUpdateForm, UserUpdateForm)
 from .models import CustomUser, UserProfile
+from .utils import send_verification_email, get_user_from_token
 
 
-# Verification Email
-def send_verification_email(user, name=None):
-    current_site = 'https://nunu29.pythonanywhere.com/'
-    subject = 'Verify Your Account'
-    token = default_token_generator.make_token(user)
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-
-    verification_link = f"{current_site}{reverse('accounts:verify_email', kwargs={'uidb64': uidb64, 'token': token})}"
-
-    html_content = render_to_string(
-        "accounts/verification-email.html",
-        context={
-            "name": name or user.username,
-            "verification_link": verification_link
-        },
-    )
-    plain_message = strip_tags(html_content)
-
-    email = EmailMultiAlternatives(
-        subject=subject,
-        body=plain_message,
-        from_email=settings.EMAIL_HOST_USER,
-        to=(user.email,),
-    )
-    email.attach_alternative(html_content, "text/html")
-    email.send()
-
-
-def get_user_from_token(uidb64, token):
-    try:
-        uid = urlsafe_base64_decode(uidb64).decode()
-        user = CustomUser.objects.get(pk=uid)
-    except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
-        return None
-
-    if default_token_generator.check_token(user, token):
-        return user
-
-    return None
-
-
-def resend_verification_email(request, user_id):
-    user = get_object_or_404(CustomUser, id=user_id)
-
-    if not user.is_verified:
-        send_verification_email(user)
-        messages.success(request, _('Verification email resent. Please check your inbox.'))
-        return redirect('accounts:login')
-
-    messages.error(request, 'Unable to resend verification email.')
-    return redirect('accounts:login')
-
-
-def verify_email(request, uidb64, token):
-    user = get_user_from_token(uidb64, token)
-
-    if user:
-        if user.is_verified:
-            messages.info(request, _('This email is already verified.'))
-            return redirect('accounts:login')
-
-        user.is_verified = True
-        user.save()
-        messages.success(request, _('Your email has been verified. You can now log in.'))
-        return redirect('accounts:login')
-    else:
-        messages.error(request, _('The verification link is invalid or has expired.'))
-        return redirect('accounts:login')
-
-
-# Registration
 def register(request: HttpRequest) -> HttpResponse:
     """
     Handle user registration.
@@ -133,8 +54,60 @@ def register(request: HttpRequest) -> HttpResponse:
     return render(request, 'accounts/register.html', {"form": form})
 
 
-# Password Reset
+def resend_verification_email(request: HttpRequest, user_id: int) -> HttpResponse:
+    """
+    Resend verification email for unverified user.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        user_id (int): The ID of the user.
+
+    Returns:
+        HttpResponse: Redirect with success or error message.
+    """
+    user = get_object_or_404(CustomUser, id=user_id)
+
+    if not user.is_verified:
+        send_verification_email(user)
+        messages.success(request, _('Verification email resent. Please check your inbox.'))
+        return redirect('accounts:login')
+
+    messages.error(request, 'Unable to resend verification email.')
+    return redirect('accounts:login')
+
+
+def verify_email(request: HttpRequest, uidb64: str, token: str) -> HttpResponse:
+    """
+    Verify user email via token.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        uidb64 (str): Base64 encoded user ID.
+        token (str): Verification token.
+
+    Returns:
+        HttpResponse: Redirect with verification status message.
+    """
+    user = get_user_from_token(uidb64, token)
+
+    if user:
+        if user.is_verified:
+            messages.info(request, _('This email is already verified.'))
+            return redirect('accounts:login')
+
+        user.is_verified = True
+        user.save()
+        messages.success(request, _('Your email has been verified. You can now log in.'))
+        return redirect('accounts:login')
+    else:
+        messages.error(request, _('The verification link is invalid or has expired.'))
+        return redirect('accounts:login')
+
+
 class CustomPasswordResetView(PasswordResetView):
+    """
+    Custom password reset view with custom form and templates.
+    """
     form_class = CustomPasswordResetForm
     template_name = 'accounts/password-reset.html'
     html_email_template_name = 'accounts/password-reset-email-django.html'
@@ -143,18 +116,30 @@ class CustomPasswordResetView(PasswordResetView):
 
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    """
+    Custom password reset confirmation view with custom form.
+    """
     form_class = CustomSetPasswordForm
     success_url = reverse_lazy('accounts:password_reset_complete')
 
 
 class CustomLoginView(LoginView):
     """
-    Extends Django's LoginView to handle user login.
+    Extended login view with email verification check.
     """
     authentication_form = CustomAuthenticationForm
     template_name = 'accounts/login.html'
 
-    def form_valid(self, form):
+    def form_valid(self, form: CustomAuthenticationForm) -> HttpResponse:
+        """
+        Validate login form with email verification check.
+
+        Args:
+            form (CustomAuthenticationForm): The login form.
+
+        Returns:
+            HttpResponse: Redirect based on verification status.
+        """
         user = form.get_user()
         if not user.is_verified:
             resend_link = reverse('accounts:resend_verification', kwargs={'user_id': user.id})
@@ -167,7 +152,13 @@ class CustomLoginView(LoginView):
             return redirect('accounts:login')
         return super().form_valid(form)
 
-    def get_success_url(self):
+    def get_success_url(self) -> str:
+        """
+        Determine login success redirect URL.
+
+        Returns:
+            str: URL to redirect after successful login.
+        """
         next_url = self.request.GET.get('next') or self.request.POST.get('next')
         if next_url:
             return next_url
@@ -177,10 +168,19 @@ class CustomLoginView(LoginView):
         )
 
 
-# Update Profile
 @login_required
 @verified_email_required
-def update_profile(request, user_slug):
+def update_profile(request: HttpRequest, user_slug: str) -> HttpResponse:
+    """
+    Update user and profile information.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        user_slug (str): User's unique slug.
+
+    Returns:
+        HttpResponse: Profile update form or redirected response.
+    """
     user = CustomUser.objects.get(slug=user_slug)
     profile = get_object_or_404(UserProfile, user=user)
 
@@ -215,8 +215,17 @@ def update_profile(request, user_slug):
     return render(request, 'accounts/profile-update.html', context)
 
 
-# View Profile
-def view_user_profile(request, user_slug):
+def view_user_profile(request: HttpRequest, user_slug: str) -> HttpResponse:
+    """
+    Display user profile details.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        user_slug (str): User's unique slug.
+
+    Returns:
+        HttpResponse: Rendered user profile page.
+    """
     try:
         page_user = CustomUser.annotate_all_statistics(
             CustomUser.objects.filter(slug=user_slug)
@@ -244,7 +253,6 @@ def view_user_profile(request, user_slug):
     return render(request, 'accounts/profile.html', context)
 
 
-# Logout
 @login_required
 def user_logout(request: HttpRequest) -> HttpResponse:
     """

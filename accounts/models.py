@@ -1,6 +1,3 @@
-from django_countries.fields import CountryField
-from PIL import Image
-
 from typing import Any, Dict
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
@@ -8,6 +5,8 @@ from django.db import models
 from django.db.models import Count
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from django_countries.fields import CountryField
+from PIL import Image
 
 
 class CustomUserManager(BaseUserManager):
@@ -89,17 +88,17 @@ class CustomUser(AbstractUser):
 
     objects = CustomUserManager()
 
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.username)
-        super().save(*args, **kwargs)
+    class Meta:
+        verbose_name = _('User')
+        verbose_name_plural = _('Users')
 
     def __str__(self) -> str:
         return self.email
 
-    class Meta:
-        verbose_name = _('User')
-        verbose_name_plural = _('Users')
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.username)
+        super().save(*args, **kwargs)
 
     @property
     def languages(self):
@@ -118,20 +117,30 @@ class CustomUser(AbstractUser):
 
 
 class UserProfile(models.Model):
+    """
+    Extended user profile with additional details.
+
+    Stores supplementary user information and handles profile image resizing.
+    """
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
     date_of_birth = models.DateField(_('date of birth'), blank=True, null=True)
     country = CountryField(verbose_name=_("country"), blank_label=_("Select country"))
     image = models.ImageField(upload_to='profile_images/', default='default.jpeg')
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f'{self.user.username} Profile'
-
     class Meta:
         verbose_name = _('User profile')
         verbose_name_plural = _('User profiles')
 
+    def __str__(self):
+        return f'{self.user.username} Profile'
+
     def save(self, *args, **kwargs):
+        """
+        Override save method to resize profile image.
+
+        Automatically resizes images larger than 300x300 pixels.
+        """
         super().save(*args, **kwargs)
 
         img = Image.open(self.image.path)

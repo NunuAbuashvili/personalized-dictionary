@@ -5,6 +5,12 @@ from accounts.models import CustomUser
 
 
 class UserStatistics(models.Model):
+    """
+    Model tracking user activity and performance statistics.
+
+    Stores metrics like total/weekly entries, examples,
+    streak information, and last entry date.
+    """
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='statistics')
     total_entries = models.IntegerField(_('total number entries'), default=0)
     weekly_entries = models.IntegerField(_('weekly number of entries'), default=0)
@@ -14,9 +20,9 @@ class UserStatistics(models.Model):
     current_streak = models.IntegerField(_('current streak in days'), default=0)
     max_streak = models.IntegerField(_('highest streak in days'), default=0)
 
-    def __str__(self):
-        return f'Statistics for {self.user.username}'
-
     class Meta:
         verbose_name = _('User Statistic')
         verbose_name_plural = _('User Statistics')
+
+    def __str__(self):
+        return f'Statistics for {self.user.username}'

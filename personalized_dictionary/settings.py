@@ -1,9 +1,10 @@
-from celery import schedules
+import os
+from datetime import timedelta
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-from datetime import timedelta
-import os
-from pathlib import Path
+from celery import schedules
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,7 +13,7 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 OPEN_API_KEY = os.getenv('OPEN_API_KEY')
 
-DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 

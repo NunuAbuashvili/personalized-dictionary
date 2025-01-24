@@ -6,6 +6,16 @@ from .models import UserStatistics
 
 
 class LeaderboardView(ListView):
+    """
+    Renders leaderboard page with top user statistics.
+
+    Displays top 5 users in multiple categories:
+    - Most total entries.
+    - Most total examples.
+    - Weekly entries.
+    - Weekly examples.
+    - Longest user streaks.
+    """
     model = UserStatistics
     template_name = 'leaderboard/leaderboard.html'
 

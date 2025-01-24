@@ -1,19 +1,3 @@
-from drf_spectacular.utils import extend_schema
-from rest_framework import status, viewsets
-from rest_framework.exceptions import Throttled
-from rest_framework.generics import CreateAPIView, GenericAPIView
-from rest_framework.mixins import (ListModelMixin, UpdateModelMixin,
-                                   DestroyModelMixin, RetrieveModelMixin)
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from rest_framework.response import Response
-from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-from rest_framework.throttling import ScopedRateThrottle
-from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet, GenericViewSet
-
-from datetime import timedelta
-
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Count
@@ -21,70 +5,46 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 
+from drf_spectacular.utils import extend_schema
+from rest_framework import status, viewsets
+from rest_framework.exceptions import Throttled
+from rest_framework.generics import CreateAPIView, GenericAPIView
+from rest_framework.mixins import (DestroyModelMixin, ListModelMixin,
+                                   RetrieveModelMixin, UpdateModelMixin)
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
 from accounts.models import CustomUser, UserProfile
 from .permissions import IsUserProfileOrReadOnly
-from .serializers import (UserSignupSerializer,
-                          EmailSerializer,
-                          PasswordResetConfirmSerializer,
-                          UserProfileSerializer)
-
-
-def send_verification_email(user, name, subject):
-    current_site = 'https://nunu29.pythonanywhere.com/'
-    token = RefreshToken.for_user(user).access_token
-    token.set_exp(lifetime=timedelta(minutes=15))
-    verification_link = f"{current_site}{reverse('accounts:verify_email', kwargs={'uidb64': uidb64, 'token': token})}"
-
-    html_content = render_to_string(
-        "accounts/verification-email.html",
-        context={"name": name, "verification_link": verification_link},
-    )
-    plain_message = strip_tags(html_content)
-
-    email = EmailMultiAlternatives(
-        subject=subject,
-        body=plain_message,
-        from_email=settings.EMAIL_HOST_USER,
-        to=[user.email],
-    )
-    email.attach_alternative(html_content, "text/html")
-    email.send()
-
-
-def generate_password_reset_token(user):
-    token = RefreshToken.for_user(user)
-    token.set_exp(lifetime=timedelta(minutes=15))
-    return str(token.access_token)
-
-
-def get_user_from_token(token):
-    try:
-        payload = AccessToken(token)
-        user_id = payload.get('user_id')
-        user = CustomUser.objects.get(id=user_id)
-        return user
-    except (TokenError, InvalidToken):
-        return Response(
-            {"error": _("The verification link has expired or is invalid. Please request a new one.")},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    except CustomUser.DoesNotExist:
-        return Response(
-            {"error": _("This account does not exist.")},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+from .serializers import (EmailSerializer, PasswordResetConfirmSerializer,
+                          UserProfileSerializer, UserSignupSerializer)
+from .utils import send_verification_email, generate_password_reset_token, get_user_from_token
 
 
 @extend_schema(tags=['Accounts'])
 class UserSignupAPIView(CreateAPIView):
     """
-    API endpoint that allows users to register.
-    Only non-authenticated users can access this endpoint.
+    API endpoint for user registration.
+
+    Allows only non-authenticated users to create a new account.
+    Sends a verification email after successful registration.
     """
     serializer_class = UserSignupSerializer
     permission_classes = (~IsAuthenticated,)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: UserSignupSerializer):
+        """
+        Create user and trigger verification email.
+
+        Args:
+            serializer (UserSignupSerializer): Validated user data.
+        """
         user = serializer.save()
         name = self.request.data.get('first_name')
         subject = 'Verify Your Account'
@@ -97,10 +57,25 @@ class UserSignupAPIView(CreateAPIView):
 
 @extend_schema(tags=['Accounts'])
 class VerifyEmailAPIView(GenericAPIView):
+    """
+    API endpoint to verify user email address.
+
+    Allows non-authenticated users to verify their email
+    using a token sent during registration.
+    """
     permission_classes = (~IsAuthenticated,)
     serializer_class = None
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
+        """
+        Verify user email using provided token.
+
+        Args:
+            request (Request): HTTP request with token query parameter.
+
+        Returns:
+            Response: Status of email verification.
+        """
         token = request.query_params.get('token')
         if not token:
             return Response(
@@ -118,10 +93,25 @@ class VerifyEmailAPIView(GenericAPIView):
 
 @extend_schema(tags=['Accounts'])
 class ResendVerificationEmailAPIView(APIView):
+    """
+    API endpoint to resent email verification link.
+
+    Allows non-authenticated users to request a new
+    verification email if their account is not verified.
+    """
     permission_classes = (~IsAuthenticated,)
     serializer_class = EmailSerializer
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
+        """
+        Resend verification email to unverified user.
+
+        Args:
+            request (Request): HTTP request with user email.
+
+        Returns:
+            Response: Status of verification email resend.
+        """
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
@@ -150,12 +140,27 @@ class ResendVerificationEmailAPIView(APIView):
 
 @extend_schema(tags=['Accounts'])
 class PasswordResetRequestAPIView(APIView):
+    """
+    API endpoint for initiating password reset.
+
+    Allows non-authenticated users to request a password
+    reset link with rate limiting.
+    """
     permission_classes = (~IsAuthenticated,)
     serializer_class = EmailSerializer
     throttle_classes = (ScopedRateThrottle,)
     throttle_scope = 'password_reset_request'
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
+        """
+        Generate and send password reset link.
+
+        Args:
+            request (Request): HTTP request with user email.
+
+        Returns:
+            Response: Status of password reset request.
+        """
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -188,7 +193,17 @@ class PasswordResetRequestAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    def throttled(self, request, wait):
+    def throttled(self, request: Request, wait: int) -> Throttled:
+        """
+        Handle rate limit exceeded scenario.
+
+        Args:
+            request (Request): HTTP request.
+            wait (int): Seconds to wait before next request.
+
+        Returns:
+            Throttled: Exception with wait time details.
+        """
         raise Throttled(
             detail={"error": _("Too many requests. Please try again in %(wait)d seconds.") % {"wait": wait}}
         )
@@ -196,12 +211,27 @@ class PasswordResetRequestAPIView(APIView):
 
 @extend_schema(tags=['Accounts'])
 class PasswordResetConfirmAPIView(APIView):
+    """
+    API endpoint for confirming password reset.
+
+    Allows non-authenticated users to reset password
+    using a valid token with rate limiting.
+    """
     permission_classes = (~IsAuthenticated,)
     serializer_class = PasswordResetConfirmSerializer
     throttle_classes = (ScopedRateThrottle,)
     throttle_scope = 'password_reset_confirm'
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
+        """
+        Reset user password using provided token.
+
+        Args:
+            request (Request): HTTP request with new password and token.
+
+        Returns:
+            Response: Status of password reset.
+        """
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -212,7 +242,17 @@ class PasswordResetConfirmAPIView(APIView):
         user.save()
         return Response({"message": _("Password has been successfully changed.")})
 
-    def throttled(self, request, wait):
+    def throttled(self, request: Request, wait: int) -> Throttled:
+        """
+        Handle rate limit exceeded scenario.
+
+        Args:
+            request (Request): HTTP request.
+            wait (int): Seconds to wait before next request.
+
+        Raises:
+            Throttled: Exception with wait time details.
+        """
         raise Throttled(
             detail={"error": _("Too many requests. Please try again in %(wait)d seconds.") % {"wait": wait}}
         )
@@ -224,10 +264,18 @@ class UserProfileViewSet(ListModelMixin,
                         UpdateModelMixin,
                         DestroyModelMixin,
                         GenericViewSet):
+    """
+    ViewSet for user profile operations.
+
+    Provides list, retrieve, update, and delete
+    functionalities for user profiles with
+    specific permission and queryset annotations.
+    """
     serializer_class = UserProfileSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsUserProfileOrReadOnly)
 
     def get_queryset(self):
+        """Get annotated queryset of user profiles."""
         queryset = UserProfile.objects.select_related(
             'user'
         ).annotate(

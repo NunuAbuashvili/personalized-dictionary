@@ -1,8 +1,7 @@
-from django_countries.serializers import CountryFieldMixin
-from rest_framework import serializers
-
 from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
+from django_countries.serializers import CountryFieldMixin
+from rest_framework import serializers
 
 from accounts.models import CustomUser, UserProfile
 
@@ -33,7 +32,7 @@ class UserSignupSerializer(serializers.ModelSerializer):
             'email': {'label': _('Email')},
         }
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         """
         Ensure passwords match and meet Django's password validation requirements.
         """
@@ -58,7 +57,7 @@ class UserSignupSerializer(serializers.ModelSerializer):
 
         return data
 
-    def create(self, validated_data) -> CustomUser:
+    def create(self, validated_data: dict) -> CustomUser:
         """
         Create a new user instance with validated data.
         """
@@ -71,20 +70,44 @@ class UserSignupSerializer(serializers.ModelSerializer):
 
 
 class EmailSerializer(serializers.Serializer):
+    """Serializer for validating email addresses."""
     email = serializers.EmailField()
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Serializer for password reset confirmation process.
+
+    Validates that the new password and confirmation password match.
+    """
     new_password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
+        """
+        Validate that the new password and confirmation password are identical.
+
+        Args:
+            data (dict): Dictionary containing 'new_password' and 'confirm_password'.
+
+        Raises:
+            ValidationError: If the new password and confirmation password do not match.
+
+        Returns:
+            dict: Validated data if passwords match.
+        """
         if data['new_password'] != data['confirm_password']:
             raise serializers.ValidationError(_("Two password fields do not match."))
         return data
 
 
 class UserProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
+    """
+    Serializer for UserProfile model that includes additional user-related fields.
+
+    Handles serialization and deserialization of user profile data,
+    including fields from the associated User model.
+    """
     username = serializers.CharField(source='user.username')
     email = serializers.EmailField(source='user.email', label=_('Email Address'), read_only=True)
     first_name = serializers.CharField(source='user.first_name', label=_('First Name'))
@@ -101,9 +124,16 @@ class UserProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
             'folder_count', 'dictionary_count', 'entry_count'
         )
 
-    def update(self, instance, validated_data):
+    def update(self, instance: UserProfile, validated_data: dict) -> UserProfile:
         """
-        Update a UserProfile instance and its associated CustomUser.
+        Update a UserProfile instance and its associated CustomUser instance.
+
+        Args:
+            instance (UserProfile): UserProfile instance to be updated.
+            validated_data (dict): Validated data for update.
+
+        Returns:
+            UserProfile: Updated UserProfile instance.
         """
         user_data = validated_data.pop('user', {})
 
@@ -121,9 +151,18 @@ class UserProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
 
         return instance
 
-    def validate_username(self, value):
+    def validate_username(self, value: str) -> str:
         """
-        Validate that the username is unique.
+        Validate that the username is unique across all users.
+
+        Args:
+            value (str): Proposed username.
+
+        Raises:
+            ValidationError: If the username already exists.
+
+        Returns:
+            str: Validated username.
         """
         user = self.instance.user if self.instance else None
         if CustomUser.objects.exclude(pk=user.pk if user else None).filter(username=value).exists():

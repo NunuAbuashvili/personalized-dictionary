@@ -1,10 +1,13 @@
 import django_filters
 from django.db.models import Q
 
-from .models import DictionaryEntry, DictionaryFolder, Dictionary
+from .models import Dictionary, DictionaryEntry, DictionaryFolder
 
 
 class HomeEntrySearchFilter(django_filters.FilterSet):
+    """
+    A filter for searching entries across all dictionaries.
+    """
     search = django_filters.CharFilter(
         method='filter_search',
         label='',
@@ -31,6 +34,7 @@ class HomeEntrySearchFilter(django_filters.FilterSet):
 
 
 class DictionaryFolderFilter(django_filters.FilterSet):
+    """A filter for searching dictionary folders."""
     search = django_filters.CharFilter(
         method='filter_search',
         label='',
@@ -56,6 +60,7 @@ class DictionaryFolderFilter(django_filters.FilterSet):
 
 
 class DictionaryFilter(django_filters.FilterSet):
+    """A filter for searching dictionaries within a folder."""
     search = django_filters.CharFilter(
         method='filter_search',
         label='',
@@ -82,6 +87,7 @@ class DictionaryFilter(django_filters.FilterSet):
 
 
 class DictionariesFilter(django_filters.FilterSet):
+    """A filter for searching dictionaries by folder."""
     search = django_filters.CharFilter(
         method='filter_search',
         label='',
@@ -127,6 +133,7 @@ class DictionariesFilter(django_filters.FilterSet):
 
 
 class DictionaryEntryFilter(django_filters.FilterSet):
+    """A filter for searching entries within a dictionary."""
     search = django_filters.CharFilter(
         method='filter_search',
         label='',

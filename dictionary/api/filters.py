@@ -1,11 +1,16 @@
-from django_filters import rest_framework as filters
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+from django_filters import rest_framework as filters
 
-from dictionary.models import DictionaryFolder, Dictionary, DictionaryEntry
+from dictionary.models import Dictionary, DictionaryEntry, DictionaryFolder
 
 
 class DictionaryFolderFilter(filters.FilterSet):
+    """
+    Filter for searching dictionary folders across multiple fields.
+
+    Allows searching by folder name, language, or dictionary name.
+    """
     search = filters.CharFilter(
         method='multi_field_search',
         label=_('Search by folder, language or dictionary name')
@@ -26,6 +31,11 @@ class DictionaryFolderFilter(filters.FilterSet):
 
 
 class DictionaryFilter(filters.FilterSet):
+    """
+    Filter for searching dictionaries across multiple fields.
+
+    Allows searching by dictionary details and entries.
+    """
     search = filters.CharFilter(
         method='multi_field_search',
         label=_('Search by dictionary name, entry words or their meanings')
@@ -42,6 +52,11 @@ class DictionaryFilter(filters.FilterSet):
 
 
 class DictionaryEntryFilter(filters.FilterSet):
+    """
+    Filter for searching dictionary entries.
+
+    Provides a general search across entry fields.
+    """
     search = filters.CharFilter(
         method='multi_field_search',
         label=_('Search through the dictionary entries')
@@ -61,6 +76,7 @@ class DictionaryEntryFilter(filters.FilterSet):
 
 
 class HomeEntrySearchFilter(filters.FilterSet):
+    """Filter for searching through all dictionary entries."""
     search = filters.CharFilter(
         method='multi_field_search',
         label=_('Search through the dictionary entries')

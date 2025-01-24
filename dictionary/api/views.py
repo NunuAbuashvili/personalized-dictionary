@@ -1,31 +1,42 @@
+import random
+
+from django.template.loader import render_to_string
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from weasyprint import HTML
 
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-import random
-
 from accounts.models import CustomUser
-from dictionary.models import DictionaryFolder, Dictionary, DictionaryEntry
-from dictionary.views import fetch_data_from_openai
+from dictionary.models import Dictionary, DictionaryEntry, DictionaryFolder
+from dictionary.views.entries import fetch_data_from_openai
 from .filters import *
 from .permissions import IsDictionaryAuthorOrReadOnly, IsFolderAuthorOrReadOnly
-from .serializers import (DictionaryFolderSerializer, DictionarySerializer,
-                          MiniDictionarySerializer, CreateDictionaryEntrySerializer,
-                          DictionaryEntrySerializer, SearchDictionaryEntrySerializer,
-                          FlashcardFrontTypeSerializer, InitiateEntrySerializer)
+from .serializers import (
+    CreateDictionaryEntrySerializer,
+    DictionaryEntrySerializer,
+    DictionaryFolderSerializer,
+    DictionarySerializer,
+    FlashcardFrontTypeSerializer,
+    InitiateEntrySerializer,
+    MiniDictionarySerializer,
+    SearchDictionaryEntrySerializer
+)
 
 
 @extend_schema(tags=['Dictionaries'])
 class HomeSearchAPIListView(ListAPIView):
+    """
+    API view for searching dictionary entries across all dictionaries.
+
+    Provides a paginated list of dictionary entries with
+    search and filtering capabilities.
+    """
     queryset = DictionaryEntry.objects.select_related(
         'dictionary',
         'dictionary__folder__user'
@@ -41,6 +52,12 @@ class HomeSearchAPIListView(ListAPIView):
 
 @extend_schema(tags=['Dictionaries'])
 class DictionaryFolderViewSet(ModelViewSet):
+    """
+    ViewSet for managing dictionary folders.
+
+    Supports CRUD operations on dictionary folders with
+    additional actions for PDF download and flashcard generation.
+    """
     queryset = DictionaryFolder.objects.select_related(
         'user',
         'language'
@@ -53,11 +70,23 @@ class DictionaryFolderViewSet(ModelViewSet):
     filterset_class = DictionaryFolderFilter
 
     def get_serializer_class(self):
+        """
+        Dynamically select serializer based on action.
+
+        Returns:
+            Serializer class appropriate for current action.
+        """
         if self.action == 'generate_folder_flashcards':
             return FlashcardFrontTypeSerializer
         return DictionaryFolderSerializer
 
-    def get_serializer_context(self):
+    def get_serializer_context(self) -> dict:
+        """
+        Add request to serializer context.
+
+        Returns:
+            Context dictionary with request.
+        """
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
@@ -69,6 +98,16 @@ class DictionaryFolderViewSet(ModelViewSet):
         permission_classes=(IsAuthenticatedOrReadOnly, IsFolderAuthorOrReadOnly)
     )
     def download_folder_pdf(self, request, *args, **kwargs):
+        """
+        Generate and download a PDF of all entries in the folder.
+
+        Args:
+            request (Request): Incoming hTTP request.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns: HTTP Response with PDF attachment.
+        """
         folder = self.get_object()
         author = folder.user
         entries = DictionaryEntry.objects.filter(
@@ -91,11 +130,11 @@ class DictionaryFolderViewSet(ModelViewSet):
         # Render the HTML content for the PDF using a template
         html_content = render_to_string('dictionary/folder-pdf.html', data)
 
-        # Generate the PDF from the HTML
+        # Generate PDF from HTML
         pdf = HTML(string=html_content).write_pdf()
         filename = f'Folder {folder.name}.pdf'
 
-        # Return the PDF as a response
+        # Return PDF as a response
         response = HttpResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
@@ -107,6 +146,17 @@ class DictionaryFolderViewSet(ModelViewSet):
         permission_classes=(IsAuthenticatedOrReadOnly, IsFolderAuthorOrReadOnly)
     )
     def generate_folder_flashcards(self, request, *args, **kwargs):
+        """
+        Generate flashcards for all entries in the folder.
+
+        Args:
+            request: Incoming HTTP request.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            HTTP response with generated flashcards.
+        """
         folder = self.get_object()
         front_type = request.data.get('front_type')
 
@@ -142,12 +192,24 @@ class DictionaryFolderViewSet(ModelViewSet):
 
 @extend_schema(tags=['Dictionaries'])
 class DictionaryViewSet(ModelViewSet):
+    """
+    ViwSet for managing dictionaries within a folder.
+
+    Supports CRUD operations on dictionaries with additional actions
+    for PDF download and flashcard generation.
+    """
     serializer_class = DictionarySerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsDictionaryAuthorOrReadOnly)
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = DictionaryFilter
 
     def get_queryset(self):
+        """
+        Filter queryset to dictionaries within a specific folder.
+
+        Returns:
+            Filtered queryset of dictionaries.
+        """
         folder_pk = self.kwargs.get('folder_pk', '')
         return Dictionary.objects.filter(
             folder__pk=folder_pk
@@ -161,6 +223,17 @@ class DictionaryViewSet(ModelViewSet):
         ).order_by('-created_at')
 
     def dispatch(self, request, *args, **kwargs):
+        """
+        Cache folder information before dispatching request.
+
+        Args:
+            request: Incoming HTTP request
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            HTTP response
+        """
         if hasattr(self, 'kwargs') and 'folder_pk' in self.kwargs:
             folder_pk = self.kwargs['folder_pk']
             request._cached_folder = DictionaryFolder.objects.filter(
@@ -169,13 +242,25 @@ class DictionaryViewSet(ModelViewSet):
         return super().dispatch(request, *args, **kwargs)
 
     def get_serializer_class(self):
+        """
+        Dynamically select serializer based on action.
+
+        Returns:
+            Serializer class appropriate for current action.
+        """
         if self.action in ['list', 'create']:
             return MiniDictionarySerializer
         if self.action == 'generate_dictionary_flashcards':
             return FlashcardFrontTypeSerializer
         return DictionarySerializer
 
-    def get_serializer_context(self):
+    def get_serializer_context(self) -> dict:
+        """
+        Add folder to serializer context.
+
+        Returns:
+            Context dictionary with folder.
+        """
         context = super().get_serializer_context()
         folder_pk = self.kwargs.get('folder_pk', '')
         folder = DictionaryFolder.objects.filter(pk=folder_pk).first()
@@ -189,6 +274,17 @@ class DictionaryViewSet(ModelViewSet):
         permission_classes=(IsAuthenticatedOrReadOnly, IsDictionaryAuthorOrReadOnly)
     )
     def download_dictionary_pdf(self, request, *args, **kwargs):
+        """
+        Generate and download a PDF of all entries in the dictionary.
+
+        Args:
+            request: Incoming HTTP request.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            HTTP response with PDF attachment.
+        """
         dictionary = self.get_object()
         folder_pk = self.kwargs.get('folder_pk', '')
         author = CustomUser.objects.filter(
@@ -206,11 +302,11 @@ class DictionaryViewSet(ModelViewSet):
         # Render the HTML content for the PDF using a template
         html_content = render_to_string('dictionary/dictionary-pdf.html', data)
 
-        # Generate the PDF from the HTML
+        # Generate PDF from HTML
         pdf = HTML(string=html_content).write_pdf()
         filename = f'Dictionary {dictionary.name}.pdf'
 
-        # Return the PDF as a response
+        # Return PDF as a response
         response = HttpResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
@@ -222,6 +318,17 @@ class DictionaryViewSet(ModelViewSet):
         permission_classes=(IsAuthenticatedOrReadOnly, IsDictionaryAuthorOrReadOnly)
     )
     def generate_dictionary_flashcards(self, request, *args, **kwargs):
+        """
+        Generate flashcards for all entries in the dictionary.
+
+        Args:
+            request: Incoming HTTP request.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            HTTP response with generated flashcards.
+        """
         dictionary = self.get_object()
         front_type = request.data.get('front_type')
 
@@ -253,11 +360,23 @@ class DictionaryViewSet(ModelViewSet):
 
 @extend_schema(tags=['Dictionaries'])
 class DictionaryEntryViewSet(ModelViewSet):
+    """
+    ViewSet for managing dictionary entries within a dictionary.
+
+    Supports CRUD operations on dictionary entries with additional
+    actions for entry generation using OpenAI.
+    """
     permission_classes = (IsAuthenticatedOrReadOnly, IsDictionaryAuthorOrReadOnly)
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = DictionaryEntryFilter
 
     def get_queryset(self):
+        """
+        Filter queryset to entries within a specific dictionary and folder.
+
+        Returns:
+            Filtered queryset of dictionary entries.
+        """
         folder_pk = self.kwargs.get('folder_pk', '')
         dictionary_pk = self.kwargs.get('dictionary_pk', '')
         return DictionaryEntry.objects.filter(
@@ -272,6 +391,17 @@ class DictionaryEntryViewSet(ModelViewSet):
         ).order_by('-created_at')
 
     def dispatch(self, request, *args, **kwargs):
+        """
+        Cache folder information before dispatching request.
+
+        Args:
+            request: Incoming HTTP request.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            HTTP response.
+        """
         if hasattr(self, 'kwargs') and 'folder_pk' in self.kwargs:
             folder_pk = self.kwargs['folder_pk']
             request._cached_folder = DictionaryFolder.objects.filter(
@@ -280,6 +410,12 @@ class DictionaryEntryViewSet(ModelViewSet):
         return super().dispatch(request, *args, **kwargs)
 
     def get_serializer_class(self):
+        """
+        Dynamically select serializer based on action.
+
+        Returns:
+            Serializer class appropriate for current action.
+        """
         if self.action == 'generate':
             return InitiateEntrySerializer
         if self.action in ['create', 'update']:
@@ -288,6 +424,17 @@ class DictionaryEntryViewSet(ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def generate(self, request, *args, **kwargs):
+        """
+        Generate dictionary entry data using OpenAI.
+
+        Args:
+            request: Incoming HTTP request.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            HTTP response with generated entry data.
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

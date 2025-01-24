@@ -5,7 +5,18 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 
-def verified_email_required(view_func):
+def verified_email_required(view_func: callable) -> callable:
+    """
+    Decorator to ensure user has a verified email before accessing a view.
+
+    Redirects unverified users to login page with a verification email resend option.
+
+    Args:
+        view_func (callable): View function to be decorated.
+
+    Returns:
+        callable: Wrapped view function with email verification check.
+    """
     def wrapper(request, *args, **kwargs):
         if not request.user.is_verified:
             resend_link = reverse('accounts:resend_verification')

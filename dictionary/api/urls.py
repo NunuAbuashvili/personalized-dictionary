@@ -1,8 +1,7 @@
+from django.urls import include, path
 from rest_framework_nested import routers
-from django.urls import path, include
 
 from . import views
-
 
 app_name = 'dictionaries_api'
 

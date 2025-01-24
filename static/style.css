@@ -1011,8 +1011,9 @@ nav ul li a,
     background-color: #FFDBDB;
 }
 
-.dictionary-table td .entry {
+.dictionary-table .entry {
     font-style: normal;
+    width: 20%;
 }
 
 .dictionary-table td .meaning,

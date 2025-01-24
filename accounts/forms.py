@@ -48,23 +48,27 @@ class CustomAuthenticationForm(AuthenticationForm):
 
 
 class CustomPasswordResetForm(PasswordResetForm):
+    """Custom password reset form with enhanced placeholder."""
     email = forms.EmailField(widget=forms.TextInput(
         attrs={'placeholder': 'Enter your email'})
     )
 
 
 class CustomSetPasswordForm(SetPasswordForm):
+    """Custom password set form with descriptive placeholders."""
     new_password1 = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Create a new password'}))
     new_password2 = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Confirm your password'}))
 
 
 class UserUpdateForm(forms.ModelForm):
+    """Form for updating basic user information."""
     class Meta:
         model = CustomUser
         fields = ('username', 'first_name', 'last_name')
 
 
 class UserProfileUpdateForm(forms.ModelForm):
+    """Form for updating user profile details."""
     class Meta:
         model = UserProfile
         fields = ('country', 'date_of_birth', 'image')
@@ -75,6 +79,12 @@ class UserProfileUpdateForm(forms.ModelForm):
         }
 
     def clean_username(self):
+        """
+        Validate username uniqueness accross all users.
+
+        Raises:
+            ValidationError: If username already exists.
+        """
         username = self.cleaned_data['username']
         if self.instance and self.instance.id:
             if User.objects.exclude(id=self.instance.user.id).filter(username=username).exists():

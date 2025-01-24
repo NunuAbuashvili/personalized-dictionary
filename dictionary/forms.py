@@ -7,6 +7,12 @@ from .models import DictionaryEntry, Language
 
 
 class DictionaryEntryForm(forms.ModelForm):
+    """
+    Form for creating dictionary entries with language validation.
+
+    Ensures that the word being added is unique to the user and validates
+    that the entry language is not included in the target translation languages.
+    """
     entry_language = forms.ChoiceField(choices=Language.LANGUAGE_CHOICES)
     target_languages = forms.MultipleChoiceField(
         choices=Language.LANGUAGE_CHOICES,
@@ -30,7 +36,16 @@ class DictionaryEntryForm(forms.ModelForm):
             'class': 'form-control'
         })
 
-    def clean_word(self):
+    def clean_word(self) -> str:
+        """
+        Validates the 'word' field to ensure the word is unique for the user.
+
+        Returns:
+            str: The cleaned word.
+
+        Raises:
+            ValidationError: If the word already exists for the user.
+        """
         word = self.cleaned_data['word'].capitalize()
         if self.user_slug:
             if DictionaryEntry.objects.filter(
@@ -40,7 +55,16 @@ class DictionaryEntryForm(forms.ModelForm):
                 raise forms.ValidationError(_('You have already added this word.'))
         return word
 
-    def clean_target_languages(self):
+    def clean_target_languages(self) -> list:
+        """
+        Validated that the target languages do not include the entry language.
+
+        Returns:
+            list: The cleaned list of target languages.
+
+        Raises:
+            ValidationError: If the entry is in the target languages.
+        """
         target_languages = self.cleaned_data['target_languages']
         entry_language = self.cleaned_data.get('entry_language')
 

@@ -8,6 +8,9 @@ from accounts.models import CustomUser
 
 
 class Language(models.Model):
+    """
+    Represents a language with a predefined set of choices and a unique slug.
+    """
     LANGUAGE_CHOICES = [
         ('English', _('English')),
         ('Georgian', _('Georgian')),
@@ -20,20 +23,21 @@ class Language(models.Model):
     name = models.CharField(choices=LANGUAGE_CHOICES, max_length=15)
     slug = models.SlugField(_('slug'), unique=True)
 
+    class Meta:
+        verbose_name = _('Language')
+        verbose_name_plural = _('Languages')
+
+    def __str__(self):
+        return self.name
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = _('Language')
-        verbose_name_plural = _('Languages')
-
 
 class DictionaryFolder(models.Model):
+    """Represents a dictionary folder."""
     ACCESSIBILITY_CHOICES = [
         ('Public', _('Public')),
         ('Private', _('Private')),
@@ -46,14 +50,6 @@ class DictionaryFolder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name, allow_unicode=True)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.name
-
     class Meta:
         verbose_name = _('Dictionary Folder')
         verbose_name_plural = _('Dictionary Folders')
@@ -62,7 +58,18 @@ class DictionaryFolder(models.Model):
             UniqueConstraint(fields=('user', 'slug'), name='unique_slug_per_user'),
         ]
 
-    def get_absolute_url(self):
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name, allow_unicode=True)
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self) -> str:
+        """
+        Returns the URL to view the details of the folder.
+        """
         return reverse(
             'dictionaries:folder-detail',
             kwargs={'folder_slug': self.slug, 'user_slug': self.user.slug}
@@ -70,6 +77,9 @@ class DictionaryFolder(models.Model):
 
     @classmethod
     def annotate_all_statistics(cls, queryset):
+        """
+        Annotates the folder queryset with dictionary and entry counts.
+        """
         return queryset.annotate(
             dictionary_count=Count('dictionaries', distinct=True),
             entry_count=Count('dictionaries__entries', distinct=True),
@@ -77,6 +87,7 @@ class DictionaryFolder(models.Model):
 
 
 class Dictionary(models.Model):
+    """Represents a dictionary inside a folder."""
     ACCESSIBILITY_CHOICES = [
         ('Public', _('Public')),
         ('Private', _('Private')),
@@ -89,14 +100,6 @@ class Dictionary(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name, allow_unicode=True)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.name
-
     class Meta:
         verbose_name = _('Dictionary')
         verbose_name_plural = _('Dictionaries')
@@ -105,7 +108,18 @@ class Dictionary(models.Model):
             UniqueConstraint(fields=('folder', 'slug'), name='unique_slug_per_folder'),
         ]
 
-    def get_absolute_url(self):
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name, allow_unicode=True)
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self) -> str:
+        """
+        Returns the URL to view the details of the dictionary.
+        """
         return reverse('dictionaries:dictionary-detail', kwargs={
             'user_slug': self.folder.user.slug,
             'folder_slug': self.folder.slug,
@@ -114,6 +128,7 @@ class Dictionary(models.Model):
 
 
 class DictionaryEntry(models.Model):
+    """Represents a word entry in a dictionary."""
     dictionary = models.ForeignKey(Dictionary, on_delete=models.CASCADE, related_name='entries')
     word = models.CharField(_('dictionary entry'), max_length=255)
     slug = models.SlugField(_('slug'), allow_unicode=True)
@@ -121,15 +136,6 @@ class DictionaryEntry(models.Model):
     image = models.ImageField(upload_to='entry_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.word, allow_unicode=True)
-        self.word = self.word.title()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.word
 
     class Meta:
         verbose_name = _('Dictionary Entry')
@@ -139,7 +145,19 @@ class DictionaryEntry(models.Model):
             UniqueConstraint(fields=('dictionary', 'slug'), name='unique_slug_per_dictionary'),
         ]
 
-    def get_absolute_url(self):
+    def __str__(self):
+        return self.word
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.word, allow_unicode=True)
+        self.word = self.word.title()
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self) -> str:
+        """
+        Returns the URL to view the details of the dictionary entry.
+        """
         return reverse('dictionaries:entry-detail', kwargs={
             'user_slug': self.dictionary.folder.user.slug,
             'folder_slug': self.dictionary.folder.slug,
@@ -149,26 +167,32 @@ class DictionaryEntry(models.Model):
 
 
 class Example(models.Model):
+    """
+    Represents an example sentence associated with a dictionary entry.
+    """
     sentence = models.TextField(_('example sentence'))
     source = models.CharField(_('source'), max_length=120, null=True, blank=True)
     entry = models.ForeignKey(DictionaryEntry, on_delete=models.CASCADE, related_name='examples')
-
-    def __str__(self):
-        return self.sentence
 
     class Meta:
         verbose_name = _('Example')
         verbose_name_plural = _('Examples')
 
+    def __str__(self):
+        return self.sentence
+
 
 class Meaning(models.Model):
+    """
+    Represents the meaning of a word entry in a specific language.
+    """
     entry = models.ForeignKey(DictionaryEntry, on_delete=models.CASCADE, related_name='meanings')
     description = models.TextField(_('word meaning'))
     target_language = models.ForeignKey(Language, on_delete=models.CASCADE, related_name='meanings')
 
-    def __str__(self):
-        return self.description
-
     class Meta:
         verbose_name = _('Meaning')
         verbose_name_plural = _('Meanings')
+
+    def __str__(self):
+        return self.description
